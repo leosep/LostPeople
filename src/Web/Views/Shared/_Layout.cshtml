@@ -1,0 +1,160 @@
+﻿<!DOCTYPE html>
+<html lang="es-DO">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - LostPeople RD</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#1B4F72', light: '#3498DB', dark: '#0E2E45' },
+                        secondary: { DEFAULT: '#E67E22', light: '#F39C12' },
+                        accent: { DEFAULT: '#27AE60', light: '#2ECC71' },
+                        danger: { DEFAULT: '#C0392B', light: '#E74C3C' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+        .skip-link { position: absolute; top: -40px; left: 0; background: #1B4F72; color: white; padding: 8px; z-index: 100; }
+        .skip-link:focus { top: 0; }
+        .alert-amber { background-color: #FEF3C7; border-left: 4px solid #E67E22; }
+        .alert-silver { background-color: #F3F4F6; border-left: 4px solid #95A5A6; }
+        .alert-azul { background-color: #EFF6FF; border-left: 4px solid #3498DB; }
+        .alert-rosa { background-color: #FDF2F8; border-left: 4px solid #E91E63; }
+    </style>
+</head>
+<body class="bg-neutral-50 text-neutral-800 min-h-screen flex flex-col">
+    <div class="bg-yellow-500 text-yellow-900 text-center py-2 px-4 text-sm font-semibold border-b-2 border-yellow-600">
+        ⚠️ Esta aplicación está en proceso de desarrollo - No usar en producción
+    </div>
+    <a href="#main-content" class="skip-link">Saltar al contenido principal</a>
+
+    <header class="bg-primary text-white shadow-lg">
+        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <a href="/" class="flex items-center space-x-2">
+                    <span class="text-2xl font-bold">LostPeople RD</span>
+                </a>
+                <div class="hidden md:flex space-x-6 items-center">
+                    <a href="/" class="hover:text-secondary-light transition">Inicio</a>
+                    <a href="/Buscar" class="hover:text-secondary-light transition">Buscar persona</a>
+                    <a href="/Reportar" class="hover:text-secondary-light transition">Reportar</a>
+                    <a href="/Reportar/Localizada" class="hover:text-secondary-light transition">¿Está a salvo?</a>
+                    <a href="/Reportar/Seguimiento" class="hover:text-secondary-light transition">Seguimiento</a>
+                    <a href="/Home/Sobre" class="hover:text-secondary-light transition">Sobre</a>
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <span class="text-sm">@User.Identity.Name</span>
+                        <form method="post" action="/Account/Logout" class="inline">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="hover:text-secondary-light transition text-sm">Cerrar sesión</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <a href="/Account/Login" class="hover:text-secondary-light transition font-semibold">Iniciar sesión</a>
+                    }
+                </div>
+                <button id="menu-btn" class="md:hidden p-2 rounded hover:bg-primary-light transition" aria-label="Menú">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden pb-4 space-y-2">
+                <a href="/" class="block px-3 py-2 rounded hover:bg-primary-light">Inicio</a>
+                <a href="/Buscar" class="block px-3 py-2 rounded hover:bg-primary-light">Buscar persona</a>
+                <a href="/Reportar" class="block px-3 py-2 rounded hover:bg-primary-light">Reportar</a>
+                <a href="/Reportar/Localizada" class="block px-3 py-2 rounded hover:bg-primary-light">¿Está a salvo?</a>
+                <a href="/Reportar/Seguimiento" class="block px-3 py-2 rounded hover:bg-primary-light">Seguimiento</a>
+                <a href="/Home/Sobre" class="block px-3 py-2 rounded hover:bg-primary-light">Sobre</a>
+                @if (User.Identity?.IsAuthenticated != true)
+                {
+                    <a href="/Account/Login" class="block px-3 py-2 rounded hover:bg-primary-light">Iniciar sesión</a>
+                }
+            </div>
+        </nav>
+    </header>
+
+    <main id="main-content" class="flex-grow">
+        @RenderBody()
+    </main>
+
+    <footer class="bg-primary-dark text-white py-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="font-bold text-lg mb-3">LostPeople RD</h3>
+                    <p class="text-sm text-neutral-300">Plataforma complementaria para la búsqueda de personas desaparecidas en República Dominicana.</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg mb-3">Autoridades</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="https://policianacional.gob.do" class="hover:text-secondary-light" target="_blank">Policía Nacional</a></li>
+                        <li><a href="tel:911" class="hover:text-secondary-light">911 - Emergencias</a></li>
+                        <li><a href="https://presidencia.gob.do" class="hover:text-secondary-light" target="_blank">Alertas RD</a></li>
+                        <li><a href="https://datos.gob.do" class="hover:text-secondary-light" target="_blank">Datos Abiertos RD</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg mb-3">Legal</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="/Home/Privacy" class="hover:text-secondary-light">Privacidad (Ley 172-13)</a></li>
+                        <li><a href="/Home/Sobre" class="hover:text-secondary-light">Términos de uso</a></li>
+                        <li><a href="/Home/DataRetention" class="hover:text-secondary-light">Retención de datos</a></li>
+                        <li><a href="/Home/Dsar" class="hover:text-secondary-light">Derechos ARCO</a></li>
+                        <li class="text-neutral-400">Protegido por Ley 172-13</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg mb-3">Cuenta</h3>
+                    <ul class="space-y-2 text-sm">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li><a href="/Account/Logout" class="hover:text-secondary-light">Cerrar sesión</a></li>
+                        }
+                        else
+                        {
+                            <li><a href="/Account/Login" class="hover:text-secondary-light">Iniciar sesión</a></li>
+                            <li><a href="/Account/Register" class="hover:text-secondary-light">Crear cuenta</a></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-neutral-600 mt-6 pt-4 text-center text-sm text-neutral-400">
+                &copy; @DateTime.Now.Year - LostPeople RD. Idea original por Nicole Morel Checo. No sustituye a la Policía Nacional ni al 911.
+            </div>
+        </div>
+    </footer>
+
+    <div id="cookie-banner" class="fixed bottom-0 left-0 right-0 bg-neutral-900 text-white px-4 py-3 z-50 hidden">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p class="text-sm">Usamos cookies solo para el funcionamiento de la plataforma. Al continuar navegando, aceptas su uso.</p>
+            <div class="flex gap-3 shrink-0">
+                <a href="/Home/Privacy" class="text-sm underline hover:text-secondary-light">Más información</a>
+                <button id="cookie-accept" class="px-4 py-2 bg-primary text-white text-sm font-bold rounded hover:bg-primary-light min-h-[44px]">Aceptar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (!localStorage.getItem('cookie-accepted')) {
+            document.getElementById('cookie-banner')?.classList.remove('hidden');
+        }
+        document.getElementById('cookie-accept')?.addEventListener('click', function() {
+            localStorage.setItem('cookie-accepted', 'true');
+            document.getElementById('cookie-banner')?.classList.add('hidden');
+        });
+        document.getElementById('menu-btn')?.addEventListener('click', function() {
+            document.getElementById('mobile-menu')?.classList.toggle('hidden');
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

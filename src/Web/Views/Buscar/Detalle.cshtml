@@ -1,0 +1,107 @@
+@model PersonaReportada
+@{
+    ViewData["Title"] = $"{Model.PrimerNombre} {Model.PrimerApellido}";
+    var esDesaparecido = Model.EstadoCasoId <= 4;
+}
+
+<div class="max-w-4xl mx-auto px-4 py-8">
+    <a href="/Buscar" class="text-primary font-semibold hover:underline mb-6 inline-block">← Volver a resultados</a>
+
+    <div class="bg-white rounded-lg shadow-sm border border-neutral-200 p-6 md:p-8">
+        <div class="flex flex-col md:flex-row gap-6">
+            <div class="w-40 h-40 bg-neutral-100 rounded-lg flex items-center justify-center text-5xl flex-shrink-0 mx-auto md:mx-0">
+                @if (!string.IsNullOrEmpty(Model.FotoWebUrl))
+                {
+                    <img src="@Model.FotoWebUrl" alt="Foto de @Model.PrimerNombre" class="w-full h-full rounded-lg object-cover" />
+                }
+                else { <span>👤</span> }
+            </div>
+
+            <div class="flex-1 text-center md:text-left">
+                <h1 class="text-3xl font-bold text-primary">@Model.PrimerNombre @Model.SegundoNombre @Model.PrimerApellido @Model.SegundoApellido</h1>
+                <p class="text-lg text-neutral-600 mt-1">
+                    @(Model.EdadAproximada?.ToString() ?? "?") años
+                    @(!string.IsNullOrEmpty(Model.Sexo) ? "· " + Model.Sexo : "")
+                </p>
+                <span class="inline-block mt-3 px-4 py-2 text-sm font-bold rounded-full @(esDesaparecido ? "bg-orange-100 text-orange-700" : "bg-green-100 text-green-700")">
+                    @(esDesaparecido ? "🟠 DESAPARECIDO" : "✅ LOCALIZADO")
+                </span>
+                @if (!string.IsNullOrEmpty(Model.TipoAlerta))
+                {
+                    <span class="inline-block mt-2 px-4 py-2 text-sm font-bold rounded-full bg-red-100 text-red-700 ml-2">
+                        Alerta @Model.TipoAlerta
+                    </span>
+                }
+            </div>
+        </div>
+
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h2 class="font-bold text-lg text-primary mb-3">Datos generales</h2>
+                <dl class="space-y-2">
+                    <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Desapareció:</dt><dd class="text-sm">@Model.FechaDesaparicion.ToString("dd 'de' MMMM 'de' yyyy")</dd></div>
+                    @if (!string.IsNullOrEmpty(Model.UltimaUbicacionTexto))
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Última vez vista:</dt><dd class="text-sm">@Model.UltimaUbicacionTexto</dd></div>
+                    }
+                    @if (Model.UltimaUbicacionZona != null)
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Provincia:</dt><dd class="text-sm">@Model.UltimaUbicacionZona.Nombre</dd></div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Vestimenta))
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Vestimenta:</dt><dd class="text-sm">@Model.Vestimenta</dd></div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.SenasParticulares))
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Señas particulares:</dt><dd class="text-sm">@Model.SenasParticulares</dd></div>
+                    }
+                </dl>
+            </div>
+            <div>
+                <h2 class="font-bold text-lg text-primary mb-3">Descripción física</h2>
+                <dl class="space-y-2">
+                    @if (!string.IsNullOrEmpty(Model.DescripcionFisica))
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Descripción:</dt><dd class="text-sm">@Model.DescripcionFisica</dd></div>
+                    }
+                    @if (Model.EstaturaCm.HasValue)
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Estatura:</dt><dd class="text-sm">@Model.EstaturaCm cm</dd></div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ColorPiel))
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Color de piel:</dt><dd class="text-sm">@Model.ColorPiel</dd></div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ColorCabello))
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Cabello:</dt><dd class="text-sm">@Model.ColorCabello</dd></div>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.ColorOjos))
+                    {
+                        <div class="flex"><dt class="font-semibold w-36 text-sm text-neutral-500">Ojos:</dt><dd class="text-sm">@Model.ColorOjos</dd></div>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        @if (Model.DatosSinteticos)
+        {
+            <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p class="text-sm text-yellow-800 font-semibold">🟡 EJEMPLO DEMO — Este no es un caso real</p>
+            </div>
+        }
+    </div>
+
+    @if (esDesaparecido)
+    {
+        <div class="mt-8 bg-white rounded-lg shadow-sm border border-neutral-200 p-6 text-center">
+            <h2 class="text-xl font-bold text-primary mb-3">¿Tienes información?</h2>
+            <p class="text-neutral-600 mb-4">Si has visto a esta persona o sabes algo, contáctanos o repórtalo a las autoridades.</p>
+            <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                <a href="/Reportar/Localizada" class="px-6 py-3 bg-accent text-white font-bold rounded-lg hover:bg-accent-light transition min-h-[44px]">Tengo información</a>
+                <a href="tel:911" class="px-6 py-3 bg-danger text-white font-bold rounded-lg hover:bg-danger-light transition min-h-[44px]">Llamar al 911</a>
+            </div>
+        </div>
+    }
+</div>

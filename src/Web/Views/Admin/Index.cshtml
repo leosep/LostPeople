@@ -1,0 +1,117 @@
+@{
+    ViewData["Title"] = "Panel de administración";
+}
+
+<div class="max-w-7xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-primary mb-6">Panel de administración</h1>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-3 mb-8">
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-neutral-200 text-center">
+            <p class="text-2xl font-bold text-primary">@ViewBag.TotalPersonas</p>
+            <p class="text-xs text-neutral-500">Total personas</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-neutral-200 text-center">
+            <p class="text-2xl font-bold text-yellow-600">@ViewBag.TotalActivos</p>
+            <p class="text-xs text-neutral-500">Casos activos</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-neutral-200 text-center">
+            <p class="text-2xl font-bold text-green-600">@ViewBag.TotalLocalizados</p>
+            <p class="text-xs text-neutral-500">Localizados</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-neutral-200 text-center">
+            <p class="text-2xl font-bold text-blue-600">@ViewBag.TotalFuentes</p>
+            <p class="text-xs text-neutral-500">Fuentes</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-neutral-200 text-center">
+            <p class="text-2xl font-bold text-purple-600">@ViewBag.TotalUsuarios</p>
+            <p class="text-xs text-neutral-500">Usuarios</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-neutral-200 text-center">
+            <p class="text-2xl font-bold text-orange-600">@ViewBag.TotalCoincidencias</p>
+            <p class="text-xs text-neutral-500">Coincidencias</p>
+        </div>
+        <div class="bg-white p-4 rounded-lg shadow-sm border border-yellow-400 text-center border-2">
+            <p class="text-2xl font-bold text-yellow-600">@ViewBag.CoincidenciasPendientes</p>
+            <p class="text-xs text-neutral-500">Pendientes</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-neutral-200">
+            <h2 class="text-xl font-bold mb-4">Acciones rápidas</h2>
+            <div class="space-y-3">
+                <a href="/Admin/Coincidencias" class="block px-4 py-3 bg-yellow-50 text-yellow-800 rounded-lg hover:bg-yellow-100 transition font-semibold flex items-center justify-between">
+                    Revisar coincidencias pendientes
+                    @if (ViewBag.CoincidenciasPendientes > 0)
+                    {
+                        <span class="bg-yellow-500 text-white px-2 py-0.5 rounded-full text-xs">@ViewBag.CoincidenciasPendientes</span>
+                    }
+                </a>
+                <a href="/Admin/Fuentes" class="block px-4 py-3 bg-blue-50 text-primary rounded-lg hover:bg-blue-100 transition font-semibold">Gestionar fuentes de datos</a>
+                <a href="/Admin/Usuarios" class="block px-4 py-3 bg-blue-50 text-primary rounded-lg hover:bg-blue-100 transition font-semibold">Gestionar usuarios</a>
+                <a href="/Buscar" class="block px-4 py-3 bg-blue-50 text-primary rounded-lg hover:bg-blue-100 transition font-semibold">Buscar personas</a>
+            </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-lg shadow-sm border border-neutral-200">
+            <h2 class="text-xl font-bold mb-4">Estado de fuentes</h2>
+            @if (ViewBag.Fuentes.Count == 0)
+            {
+                <p class="text-neutral-500 text-sm">No hay fuentes configuradas.</p>
+            }
+            else
+            {
+                <ul class="divide-y divide-neutral-200">
+                    @foreach (var f in ViewBag.Fuentes)
+                    {
+                        <li class="py-2 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-semibold">@f.Nombre</p>
+                                <p class="text-xs text-neutral-500">@f.Tipo — cada @f.IntervaloMinutos min</p>
+                            </div>
+                            <span class="px-2 py-1 rounded text-xs font-semibold @(f.Activo ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700")">
+                                @(f.Activo ? "Activa" : "Inactiva")
+                            </span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+
+    <div class="mt-6 bg-white p-6 rounded-lg shadow-sm border border-neutral-200">
+        <h2 class="text-xl font-bold mb-4">Últimos reportes</h2>
+        @if (ViewBag.UltimosReportes.Count == 0)
+        {
+            <p class="text-neutral-500 text-sm">No hay reportes recientes.</p>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-neutral-50 border-b border-neutral-200">
+                        <tr>
+                            <th class="text-left px-3 py-2 font-semibold">Persona</th>
+                            <th class="text-left px-3 py-2 font-semibold">Teléfono</th>
+                            <th class="text-left px-3 py-2 font-semibold">Email</th>
+                            <th class="text-left px-3 py-2 font-semibold">Verificado</th>
+                            <th class="text-left px-3 py-2 font-semibold">Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-neutral-200">
+                        @foreach (var r in ViewBag.UltimosReportes)
+                        {
+                            <tr class="hover:bg-neutral-50">
+                                <td class="px-3 py-2">@r.Persona?.PrimerNombre @r.Persona?.PrimerApellido</td>
+                                <td class="px-3 py-2 text-neutral-500">@r.TelefonoContacto</td>
+                                <td class="px-3 py-2 text-neutral-500">@r.EmailContacto</td>
+                                <td class="px-3 py-2">@(r.Verificado ? "Sí" : "No")</td>
+                                <td class="px-3 py-2 text-neutral-500">@r.FechaCreacion.ToString("g")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

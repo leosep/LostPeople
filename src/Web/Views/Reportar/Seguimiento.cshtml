@@ -1,0 +1,35 @@
+@{
+    ViewData["Title"] = "Seguimiento de reporte";
+}
+
+<div class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-primary mb-2">🔍 Seguimiento de reporte</h1>
+    <p class="text-neutral-600 mb-8">Ingresa el código de seguimiento que recibiste al reportar.</p>
+
+    <form method="post" action="/Reportar/Seguimiento" class="bg-white p-6 rounded-lg shadow-sm border border-neutral-200 space-y-6">
+        @Html.AntiForgeryToken()
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p class="text-sm text-red-700">@error.ErrorMessage</p>
+                }
+            </div>
+        }
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="codigo">Código de seguimiento</label>
+            <input type="text" id="codigo" name="codigo" placeholder="LP-XXXXX" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary text-center text-2xl tracking-widest" required />
+        </div>
+
+        <div class="flex justify-center">
+            <button type="submit" class="px-8 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-light transition min-h-[44px]">Consultar estado</button>
+        </div>
+    </form>
+
+    <div class="mt-6 text-center">
+        <p class="text-sm text-neutral-500">¿No tienes código? <a href="/Buscar" class="text-primary font-semibold hover:underline">Busca por nombre aquí</a></p>
+    </div>
+</div>

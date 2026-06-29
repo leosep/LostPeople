@@ -1,0 +1,45 @@
+@model List<FuenteDatos>
+@{
+    ViewData["Title"] = "Fuentes de datos";
+}
+
+<div class="max-w-5xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-primary mb-6">Fuentes de datos</h1>
+
+    <div class="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-neutral-50 border-b border-neutral-200">
+                <tr>
+                    <th class="text-left px-4 py-3 font-semibold">Fuente</th>
+                    <th class="text-left px-4 py-3 font-semibold">Tipo</th>
+                    <th class="text-left px-4 py-3 font-semibold">Estado</th>
+                    <th class="text-left px-4 py-3 font-semibold">Intervalo</th>
+                    <th class="text-right px-4 py-3 font-semibold">Ejecuciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-200">
+                @foreach (var f in Model)
+                {
+                    <tr class="hover:bg-neutral-50">
+                        <td class="px-4 py-3">@f.Nombre</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 bg-neutral-100 rounded text-xs">@f.Tipo</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            @if (f.Activo)
+                            {
+                                <span class="text-green-600 font-semibold">Activa</span>
+                            }
+                            else
+                            {
+                                <span class="text-red-600 font-semibold">Inactiva</span>
+                            }
+                        </td>
+                        <td class="px-4 py-3">@f.IntervaloMinutos min</td>
+                        <td class="px-4 py-3 text-right">@f.TotalEjecuciones</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

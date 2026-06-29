@@ -1,0 +1,30 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+*.vs/
+*.DotSettings
+*.DotSettings.user
+
+# Logs
+logs/
+*.log
+quartz-upgrade.log
+sentry-native/
+
+# App runtime files
+app-error.log
+app-output.log
+app-stderr.log
+app-stdout.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

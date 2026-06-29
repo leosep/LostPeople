@@ -1,0 +1,117 @@
+﻿@{
+    ViewData["Title"] = "Inicio";
+    var casosActivos = (int)ViewBag.CasosActivos;
+    var casosResueltos = (int)ViewBag.CasosResueltos;
+    var alertas = (List<PersonaReportada>)ViewBag.AlertasActivas;
+}
+
+<section class="bg-gradient-to-br from-primary to-primary-dark text-white py-16 md:py-24">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+        <h1 class="text-3xl md:text-5xl font-bold mb-6">¿Buscas a alguien o quieres reportar?</h1>
+        <p class="text-lg md:text-xl mb-8 text-neutral-200">Juntos podemos acelerar la búsqueda de personas desaparecidas en República Dominicana.</p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/Buscar" class="inline-flex items-center justify-center px-8 py-4 bg-white text-primary font-bold rounded-lg text-lg hover:bg-neutral-100 transition min-h-[44px]">
+                🔍 Buscar persona desaparecida
+            </a>
+            <a href="/Reportar" class="inline-flex items-center justify-center px-8 py-4 bg-secondary text-white font-bold rounded-lg text-lg hover:bg-secondary-light transition min-h-[44px]">
+                📢 Reportar una desaparición
+            </a>
+        </div>
+        <p class="mt-4 text-sm text-secondary-light font-semibold">Si es una emergencia, llama al <a href="tel:911" class="underline font-bold">911</a></p>
+    </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 py-8">
+    @if (alertas.Any())
+    {
+        <h2 class="text-2xl font-bold text-primary mb-4">Alertas activas</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            @foreach (var alerta in alertas)
+            {
+                var alertaClass = alerta.TipoAlerta switch
+                {
+                    "Amber" => "alert-amber",
+                    "Silver" => "alert-silver",
+                    "Azul" => "alert-azul",
+                    "Rosa" => "alert-rosa",
+                    _ => "alert-amber"
+                };
+                <div class="@alertaClass p-4 rounded-lg shadow-sm">
+                    <div class="flex items-start space-x-3">
+                        <div class="w-16 h-16 bg-neutral-200 rounded-full flex-shrink-0 flex items-center justify-center text-2xl">
+                            @if (!string.IsNullOrEmpty(alerta.FotoThumbnailUrl))
+                            {
+                                <img src="@alerta.FotoThumbnailUrl" alt="Foto de @alerta.PrimerNombre" class="w-full h-full rounded-full object-cover" />
+                            }
+                            else
+                            {
+                                <span>👤</span>
+                            }
+                        </div>
+                        <div>
+                            <h3 class="font-bold">@alerta.PrimerNombre @alerta.PrimerApellido</h3>
+                            <p class="text-sm text-neutral-600">@(alerta.EdadAproximada?.ToString() ?? "?") años</p>
+                            <p class="text-sm text-neutral-600">@alerta.UltimaUbicacionZona?.Nombre</p>
+                            <span class="inline-block mt-2 px-3 py-1 text-xs font-bold rounded-full @(alerta.TipoAlerta == "Amber" ? "bg-orange-100 text-orange-700" : "bg-red-100 text-red-700")">
+                                Alerta @alerta.TipoAlerta
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="mt-4">
+            <a href="/Buscar" class="text-primary font-semibold hover:underline">Ver todas las alertas →</a>
+        </div>
+    }
+</section>
+
+<section class="bg-white py-12">
+    <div class="max-w-7xl mx-auto px-4">
+        <h2 class="text-2xl font-bold text-primary text-center mb-8">¿Cómo funciona?</h2>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div class="text-center p-6">
+                <div class="w-16 h-16 bg-primary-light rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">1</div>
+                <h3 class="font-bold text-lg mb-2">Reportas o buscas</h3>
+                <p class="text-neutral-600 text-sm">Reportas una desaparición o buscas a alguien en nuestra base de datos.</p>
+            </div>
+            <div class="text-center p-6">
+                <div class="w-16 h-16 bg-secondary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">2</div>
+                <h3 class="font-bold text-lg mb-2">Cruzamos datos</h3>
+                <p class="text-neutral-600 text-sm">Combinamos reportes ciudadanos con información de fuentes oficiales.</p>
+            </div>
+            <div class="text-center p-6">
+                <div class="w-16 h-16 bg-accent rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">3</div>
+                <h3 class="font-bold text-lg mb-2">Verificamos</h3>
+                <p class="text-neutral-600 text-sm">Voluntarios y autoridades confirman las coincidencias encontradas.</p>
+            </div>
+            <div class="text-center p-6">
+                <div class="w-16 h-16 bg-primary rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">4</div>
+                <h3 class="font-bold text-lg mb-2">Cerramos el caso</h3>
+                <p class="text-neutral-600 text-sm">Notificamos a los familiares y actualizamos el estado públicamente.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div class="bg-white p-8 rounded-lg shadow-sm border border-neutral-200 text-center">
+            <div class="text-4xl font-bold text-primary">@casosActivos</div>
+            <p class="text-neutral-600 mt-2">Casos activos</p>
+        </div>
+        <div class="bg-white p-8 rounded-lg shadow-sm border border-neutral-200 text-center">
+            <div class="text-4xl font-bold text-accent">@casosResueltos</div>
+            <p class="text-neutral-600 mt-2">Personas localizadas</p>
+        </div>
+    </div>
+</section>
+
+<section class="bg-yellow-50 border-y border-yellow-200 py-8">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+        <p class="text-sm font-semibold text-yellow-800">
+            🟡 Esta plataforma es <strong>COMPLEMENTARIA</strong>. No sustituye a la Policía Nacional ni al 911.
+            En caso de emergencia llama al <a href="tel:911" class="underline font-bold">911</a>.
+        </p>
+    </div>
+</section>

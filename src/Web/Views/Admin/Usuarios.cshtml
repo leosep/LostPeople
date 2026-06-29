@@ -1,0 +1,42 @@
+@model List<Usuario>
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
+<div class="max-w-5xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-primary mb-6">Usuarios registrados</h1>
+
+    <div class="bg-white rounded-lg shadow-sm border border-neutral-200 overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-neutral-50 border-b border-neutral-200">
+                <tr>
+                    <th class="text-left px-4 py-3 font-semibold">Nombre</th>
+                    <th class="text-left px-4 py-3 font-semibold">Email</th>
+                    <th class="text-left px-4 py-3 font-semibold">Rol</th>
+                    <th class="text-left px-4 py-3 font-semibold">Activo</th>
+                    <th class="text-left px-4 py-3 font-semibold">Verificado</th>
+                    <th class="text-left px-4 py-3 font-semibold">Registro</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-neutral-200">
+                @foreach (var u in Model)
+                {
+                    <tr class="hover:bg-neutral-50">
+                        <td class="px-4 py-3">@u.NombreCompleto</td>
+                        <td class="px-4 py-3 text-neutral-500">@u.Email</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 bg-neutral-100 rounded text-xs">@(u.Rol?.Nombre ?? "N/A")</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            @if (u.Activo) { <span class="text-green-600">Sí</span> } else { <span class="text-red-600">No</span> }
+                        </td>
+                        <td class="px-4 py-3">
+                            @if (u.Verificado) { <span class="text-green-600">Sí</span> } else { <span class="text-yellow-600">No</span> }
+                        </td>
+                        <td class="px-4 py-3 text-neutral-500">@u.FechaCreacion.ToString("g")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

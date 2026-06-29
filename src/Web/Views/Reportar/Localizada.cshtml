@@ -1,0 +1,73 @@
+@model LocalizadaViewModel
+@{
+    ViewData["Title"] = "Reportar persona localizada";
+}
+
+<div class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold text-primary mb-2">✅ ¿Ya encontraste a la persona?</h1>
+    <p class="text-neutral-600 mb-8">Cuéntanos para cerrar el reporte y avisar a quienes la están buscando.</p>
+
+    <form method="post" action="/Reportar/Localizada" class="bg-white p-6 rounded-lg shadow-sm border border-neutral-200 space-y-6">
+        @Html.AntiForgeryToken()
+
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="p-4 bg-red-50 border border-red-200 rounded-lg">
+                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    <p class="text-sm text-red-700">@error.ErrorMessage</p>
+                }
+            </div>
+        }
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="CodigoSeguimiento">Código de seguimiento (si lo tienes)</label>
+            <input type="text" id="CodigoSeguimiento" name="CodigoSeguimiento" value="@Model?.CodigoSeguimiento" placeholder="LP-XXXXX" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary" />
+        </div>
+
+        <div class="text-center text-neutral-400">— O busca por nombre —</div>
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="NombrePersona">Nombre de la persona</label>
+            <input type="text" id="NombrePersona" name="NombrePersona" value="@Model?.NombrePersona" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary" />
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-semibold mb-1" for="TuNombre">Tu nombre</label>
+                <input type="text" id="TuNombre" name="TuNombre" value="@Model?.TuNombre" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary" />
+            </div>
+            <div>
+                <label class="block text-sm font-semibold mb-1" for="TuTelefono">Tu teléfono</label>
+                <input type="tel" id="TuTelefono" name="TuTelefono" value="@Model?.TuTelefono" placeholder="809-000-0000" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary" />
+            </div>
+        </div>
+
+        <div>
+            <label class="flex items-center space-x-3">
+                <input type="checkbox" id="EsFamiliar" name="EsFamiliar" value="true" class="w-5 h-5 text-primary border-neutral-300 rounded focus:ring-primary" />
+                <span class="text-sm text-neutral-600">¿Eres familiar?</span>
+            </label>
+        </div>
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="LugarLocalizacion">¿Dónde fue localizada?</label>
+            <input type="text" id="LugarLocalizacion" name="LugarLocalizacion" value="@Model?.LugarLocalizacion" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary" />
+        </div>
+
+        <div>
+            <label class="flex items-center space-x-3">
+                <input type="checkbox" id="EstaSalvo" name="EstaSalvo" value="true" checked="checked" class="w-5 h-5 text-primary border-neutral-300 rounded focus:ring-primary" />
+                <span class="text-sm text-neutral-600">¿Está a salvo?</span>
+            </label>
+        </div>
+
+        <div class="flex justify-end">
+            <button type="submit" class="px-8 py-3 bg-accent text-white font-bold rounded-lg hover:bg-accent-light transition min-h-[44px]">Enviar reporte de localización</button>
+        </div>
+    </form>
+
+    <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p class="text-sm text-yellow-800 font-semibold">⚠️ Importante: un verificador confirmará esta información antes de cerrar el caso.</p>
+    </div>
+</div>

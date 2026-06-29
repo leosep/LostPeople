@@ -1,0 +1,50 @@
+@model RegisterViewModel
+@{
+    ViewData["Title"] = "Crear cuenta";
+}
+
+<div class="max-w-md mx-auto px-4 py-12">
+    <h1 class="text-3xl font-bold text-primary mb-2">Crear cuenta</h1>
+    <p class="text-neutral-600 mb-8">Regístrate para recibir notificaciones y dar seguimiento a tus reportes.</p>
+
+    <form method="post" class="bg-white p-6 rounded-lg shadow-sm border border-neutral-200 space-y-4">
+        @Html.AntiForgeryToken()
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="NombreCompleto">Nombre completo</label>
+            <input type="text" id="NombreCompleto" name="NombreCompleto" required value="@Model.NombreCompleto" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" />
+            @Html.ValidationMessageFor(m => m.NombreCompleto, "", new { @class = "text-red-500 text-xs" })
+        </div>
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="Email">Correo electrónico</label>
+            <input type="email" id="Email" name="Email" required value="@Model.Email" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" />
+            @Html.ValidationMessageFor(m => m.Email, "", new { @class = "text-red-500 text-xs" })
+        </div>
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="Telefono">Teléfono (opcional)</label>
+            <input type="tel" id="Telefono" name="Telefono" value="@Model.Telefono" class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" />
+        </div>
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="Password">Contraseña</label>
+            <input type="password" id="Password" name="Password" required class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" />
+            @Html.ValidationMessageFor(m => m.Password, "", new { @class = "text-red-500 text-xs" })
+        </div>
+
+        <div>
+            <label class="block text-sm font-semibold mb-1" for="ConfirmPassword">Confirmar contraseña</label>
+            <input type="password" id="ConfirmPassword" name="ConfirmPassword" required class="w-full px-4 py-3 border border-neutral-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary" />
+            @Html.ValidationMessageFor(m => m.ConfirmPassword, "", new { @class = "text-red-500 text-xs" })
+        </div>
+
+        @Html.ValidationSummary(true, "", new { @class = "text-red-500 text-sm" })
+
+        <button type="submit" class="w-full px-6 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary-light transition min-h-[44px]">Crear cuenta</button>
+    </form>
+
+    <p class="text-center text-sm text-neutral-500 mt-4">
+        ¿Ya tienes cuenta? <a href="/Account/Login" class="text-primary hover:underline font-semibold">Inicia sesión</a>
+    </p>
+</div>
