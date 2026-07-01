@@ -11,7 +11,8 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
+var localConfigFile = Path.Combine(AppContext.BaseDirectory, "appsettings.Local.json");
+builder.Configuration.AddJsonFile(localConfigFile, optional: true);
 
 var logConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -74,44 +75,53 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddHealthChecks();
 
-builder.Services.Configure<ForwardedHeadersOptions>(options =>
+var forwardingScheme = Environment.GetEnvironmentVariable("FORWARDED_SCHEME");
+if (!string.IsNullOrEmpty(forwardingScheme))
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-    options.KnownNetworks.Clear();
-    options.KnownProxies.Clear();
-});
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
 
 var app = builder.Build();
 
-app.UseForwardedHeaders();
+if (!string.IsNullOrEmpty(forwardingScheme))
+    app.UseForwardedHeaders();
 
-using (var scope = app.Services.CreateScope())
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<LostPeopleDbContext>();
+    var connStr = db.Database.GetConnectionString();
+    Log.Information("Attempting database migration with connection string: {ConnStr}", connStr?.Replace("Password=", "Password=***"));
+
     await db.Database.MigrateAsync();
 
-    var connStr = db.Database.GetConnectionString();
     if (!string.IsNullOrEmpty(connStr) && !await QuartzSchemaExistsAsync(connStr))
     {
         await InitializeQuartzSchemaAsync(connStr);
     }
 
     await DbInitializer.SeedAsync(db);
+    Log.Information("Database initialization completed successfully");
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application failed to initialize database");
+    throw;
 }
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
 app.UseStatusCodePagesWithReExecute("/Home/Error");
-
-var forwardingScheme = Environment.GetEnvironmentVariable("FORWARDED_SCHEME");
-if (!string.IsNullOrEmpty(forwardingScheme) || !app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
 
 app.Use(async (context, next) =>
 {
