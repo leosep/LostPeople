@@ -1,4 +1,5 @@
 using LostPeople.Application.Common.Interfaces;
+using LostPeople.Domain.Entities;
 using LostPeople.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -60,6 +61,7 @@ public class HospitalSimuladoConnector : IDataSourceConnector
             .Where(z => z.Tipo == "Provincia")
             .ToListAsync(ct);
 
+        var personas = new List<PersonaReportada>();
         for (int i = 0; i < 15; i++)
         {
             var esHombre = rand.Next(2) == 0;
@@ -75,6 +77,23 @@ public class HospitalSimuladoConnector : IDataSourceConnector
             var vestimenta = Vestimentas[rand.Next(Vestimentas.Length)];
             var senas = SenasParticulares[rand.Next(SenasParticulares.Length)];
 
+            var persona = new PersonaReportada
+            {
+                PrimerNombre = nombre,
+                PrimerApellido = apellido1,
+                SegundoApellido = apellido2,
+                EdadAproximada = edad,
+                Sexo = esHombre ? "M" : "F",
+                UltimaUbicacionTexto = provincia,
+                Vestimenta = vestimenta,
+                SenasParticulares = senas,
+                CodigoSeguimiento = Guid.NewGuid().ToString("N")[..10].ToUpper(),
+                DatosSinteticos = true,
+                EstadoCasoId = 1,
+                FechaCreacion = DateTime.UtcNow
+            };
+            personas.Add(persona);
+
             result.RecordsInserted++;
             result.RecordsExtracted++;
 
@@ -82,6 +101,9 @@ public class HospitalSimuladoConnector : IDataSourceConnector
                 "HospitalSimulado: paciente {Nombre} {Apellido}, {Edad} anos, {Provincia}, {Hospital}",
                 nombre, $"{apellido1} {apellido2}", edad, provincia, hospital);
         }
+
+        _context.PersonasReportadas.AddRange(personas);
+        await _context.SaveChangesAsync(ct);
 
         result.Success = true;
         result.Duration = DateTime.UtcNow - startTime;

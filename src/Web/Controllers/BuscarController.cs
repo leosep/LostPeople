@@ -1,9 +1,11 @@
 using LostPeople.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace LostPeople.Web.Controllers;
 
+[EnableRateLimiting("Public")]
 public class BuscarController : Controller
 {
     private readonly LostPeopleDbContext _context;

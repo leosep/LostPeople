@@ -19,17 +19,17 @@ public static class DependencyInjection
         var connStr = configuration.GetConnectionString("DefaultConnection");
         if (string.IsNullOrEmpty(connStr))
         {
-            var server = Environment.GetEnvironmentVariable("LOSTPEOPLE_DB_SERVER") ?? configuration["ConnectionString:Server"] ?? "localhost";
-            var database = Environment.GetEnvironmentVariable("LOSTPEOPLE_DB_NAME") ?? configuration["ConnectionString:Database"] ?? "LostPeople";
-            var user = Environment.GetEnvironmentVariable("LOSTPEOPLE_DB_USER") ?? configuration["ConnectionString:User"] ?? "sa";
-            var password = Environment.GetEnvironmentVariable("LOSTPEOPLE_DB_PASSWORD") ?? configuration["ConnectionString:Password"] ?? "";
+            var server = Environment.GetEnvironmentVariable("LOSTPEOPLE_DB_SERVER") ?? configuration["ConnectionStrings:Server"] ?? "localhost";
+            var database = Environment.GetEnvironmentVariable("LOSTPEOPLE_DB_NAME") ?? configuration["ConnectionStrings:Database"] ?? "LostPeople";
+            var user = Environment.GetEnvironmentVariable("LOSTPEOPLE_DB_USER") ?? configuration["ConnectionStrings:User"] ?? "sa";
+            var password = Environment.GetEnvironmentVariable("LOSTPEOPLE_DB_PASSWORD") ?? configuration["ConnectionStrings:Password"] ?? "";
             connStr = $"Server={server};Database={database};User Id={user};Password={password};TrustServerCertificate=True;Connection Timeout=30;";
         }
 
         services.AddDbContext<LostPeopleDbContext>(options =>
             options.UseSqlServer(
                 connStr,
-                b => b.MigrationsAssembly(typeof(LostPeopleDbContext).Assembly.FullName)));
+                b => b.MigrationsAssembly(typeof(LostPeopleDbContext).Assembly.GetName().Name)));
 
         services.AddScoped<Domain.Interfaces.IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuditService, AuditService>();
@@ -60,8 +60,7 @@ public static class DependencyInjection
             q.UsePersistentStore(store =>
             {
                 store.UseSqlServer(connStr);
-                store.UseJsonSerializer();
-#pragma warning disable CS0618
+                store.UseNewtonsoftJsonSerializer();
                 store.UseClustering();
                 store.PerformSchemaValidation = true;
             });

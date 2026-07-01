@@ -3,6 +3,7 @@ using LostPeople.Application;
 using LostPeople.Infrastructure;
 using LostPeople.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -73,7 +74,16 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddHealthChecks();
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 using (var scope = app.Services.CreateScope())
 {
@@ -95,7 +105,13 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+app.UseStatusCodePagesWithReExecute("/Home/Error");
+
+var forwardingScheme = Environment.GetEnvironmentVariable("FORWARDED_SCHEME");
+if (!string.IsNullOrEmpty(forwardingScheme) || !app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 app.Use(async (context, next) =>
 {
@@ -115,7 +131,18 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var headers = ctx.Context.Response.GetTypedHeaders();
+        headers.CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+        {
+            Public = true,
+            MaxAge = TimeSpan.FromDays(30)
+        };
+    }
+});
 app.UseRouting();
 app.UseRateLimiter();
 app.UseCors();
@@ -142,7 +169,13 @@ static async Task<bool> QuartzSchemaExistsAsync(string connStr)
 
 static async Task InitializeQuartzSchemaAsync(string connStr)
 {
-    var sql = await File.ReadAllTextAsync("quartz-schema.sql");
+    var schemaPath = Path.Combine(AppContext.BaseDirectory, "quartz-schema.sql");
+    if (!File.Exists(schemaPath))
+    {
+        Log.Warning("quartz-schema.sql not found at {Path}, skipping Quartz schema initialization", schemaPath);
+        return;
+    }
+    var sql = await File.ReadAllTextAsync(schemaPath);
     var batches = sql.Split("GO", StringSplitOptions.RemoveEmptyEntries);
     using var conn = new SqlConnection(connStr);
     await conn.OpenAsync();

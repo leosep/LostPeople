@@ -23,4 +23,8 @@
     <ProjectReference Include="..\Infrastructure\LostPeople.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\quartz-schema.sql" Link="quartz-schema.sql" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

@@ -5,10 +5,12 @@ using LostPeople.Infrastructure.Persistence;
 using LostPeople.Infrastructure.Services;
 using LostPeople.Web.ViewModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace LostPeople.Web.Controllers;
 
+[EnableRateLimiting("Public")]
 public class ReportarController : Controller
 {
     private readonly LostPeopleDbContext _context;
@@ -32,6 +34,7 @@ public class ReportarController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("Report")]
     public async Task<IActionResult> Index(ReportarViewModel model)
     {
         if (!model.AceptoTerminos)
@@ -101,9 +104,30 @@ public class ReportarController : Controller
 
         if (model.FotoPersona != null && model.FotoPersona.Length > 0)
         {
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var ext = Path.GetExtension(model.FotoPersona.FileName).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+            {
+                ModelState.AddModelError("FotoPersona", "Solo se permiten imágenes JPG, PNG, GIF o WebP.");
+                ViewBag.Provincias = await _context.ZonasGeograficas
+                    .Where(z => z.Tipo == "Provincia")
+                    .OrderBy(z => z.Nombre)
+                    .ToListAsync();
+                return View(model);
+            }
+
+            if (model.FotoPersona.Length > 5 * 1024 * 1024)
+            {
+                ModelState.AddModelError("FotoPersona", "La imagen no puede superar los 5 MB.");
+                ViewBag.Provincias = await _context.ZonasGeograficas
+                    .Where(z => z.Tipo == "Provincia")
+                    .OrderBy(z => z.Nombre)
+                    .ToListAsync();
+                return View(model);
+            }
+
             var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", "fotos");
             Directory.CreateDirectory(uploadsDir);
-            var ext = Path.GetExtension(model.FotoPersona.FileName);
             var fileName = $"{persona.CodigoSeguimiento}_{Guid.NewGuid()}{ext}";
             var filePath = Path.Combine(uploadsDir, fileName);
             using (var stream = new FileStream(filePath, FileMode.Create))
@@ -173,6 +197,7 @@ public class ReportarController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    [EnableRateLimiting("Report")]
     public async Task<IActionResult> Localizada(LocalizadaViewModel model)
     {
         if (!ModelState.IsValid) return View(model);
