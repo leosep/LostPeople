@@ -2,7 +2,7 @@ using LostPeople.Domain.Interfaces;
 
 namespace LostPeople.Infrastructure.Persistence;
 
-public class UnitOfWork : IUnitOfWork
+public class UnitOfWork : IUnitOfWork, IAsyncDisposable
 {
     private readonly LostPeopleDbContext _context;
     private readonly Dictionary<Type, object> _repositories = new();
@@ -42,5 +42,15 @@ public class UnitOfWork : IUnitOfWork
             _context.Dispose();
             _disposed = true;
         }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (!_disposed)
+        {
+            await _context.DisposeAsync();
+            _disposed = true;
+        }
+        GC.SuppressFinalize(this);
     }
 }

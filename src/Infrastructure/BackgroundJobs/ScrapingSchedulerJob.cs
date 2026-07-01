@@ -1,5 +1,8 @@
 using LostPeople.Application.Common.Interfaces;
+using LostPeople.Domain.Entities;
+using LostPeople.Infrastructure.Persistence;
 using LostPeople.Infrastructure.Scraping;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Quartz;
 
@@ -9,11 +12,13 @@ namespace LostPeople.Infrastructure.BackgroundJobs;
 public class ScrapingSchedulerJob : IJob
 {
     private readonly DataSourceConnectorFactory _factory;
+    private readonly LostPeopleDbContext _context;
     private readonly ILogger<ScrapingSchedulerJob> _logger;
 
-    public ScrapingSchedulerJob(DataSourceConnectorFactory factory, ILogger<ScrapingSchedulerJob> logger)
+    public ScrapingSchedulerJob(DataSourceConnectorFactory factory, LostPeopleDbContext context, ILogger<ScrapingSchedulerJob> logger)
     {
         _factory = factory;
+        _context = context;
         _logger = logger;
     }
 
@@ -29,6 +34,26 @@ public class ScrapingSchedulerJob : IJob
                 _logger.LogInformation("Ejecutando conector: {SourceName}", connector.SourceName);
                 var result = await connector.FetchAsync(context.CancellationToken);
 
+                var fuente = await _context.FuentesDatos.FirstOrDefaultAsync(f => f.Codigo == connector.SourceCode, context.CancellationToken);
+                if (fuente != null)
+                {
+                    fuente.TotalEjecuciones++;
+                    fuente.UltimaEjecucionOk = result.Success ? DateTime.UtcNow : null;
+                    fuente.TotalRegistrosObtenidos += result.RecordsInserted;
+
+                    if (result.Success)
+                    {
+                        fuente.FallosConsecutivos = 0;
+                        fuente.EstadoSalud = "Activa";
+                    }
+                    else
+                    {
+                        fuente.FallosConsecutivos++;
+                        fuente.EstadoSalud = fuente.FallosConsecutivos >= 3 ? "Caída" : "Inestable";
+                        fuente.UltimoError = DateTime.UtcNow;
+                    }
+                }
+
                 if (result.Success)
                     _logger.LogInformation("Conector {SourceName}: {Inserted} registros insertados, {Duration}ms",
                         connector.SourceName, result.RecordsInserted, result.Duration.TotalMilliseconds);
@@ -39,9 +64,18 @@ public class ScrapingSchedulerJob : IJob
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error en conector {SourceName}", connector.SourceName);
+
+                var fuente = await _context.FuentesDatos.FirstOrDefaultAsync(f => f.Codigo == connector.SourceCode, context.CancellationToken);
+                if (fuente != null)
+                {
+                    fuente.FallosConsecutivos++;
+                    fuente.UltimoError = DateTime.UtcNow;
+                    fuente.EstadoSalud = fuente.FallosConsecutivos >= 3 ? "Caída" : "Inestable";
+                }
             }
         }
 
+        await _context.SaveChangesAsync(context.CancellationToken);
         _logger.LogInformation("Ejecución de scraping completada.");
     }
 }

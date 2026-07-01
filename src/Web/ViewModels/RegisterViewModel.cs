@@ -18,7 +18,7 @@ public class RegisterViewModel
     public string? Telefono { get; set; }
 
     [Required(ErrorMessage = "La contraseña es obligatoria")]
-    [StringLength(100, MinimumLength = 6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres")]
+    [StringLength(100, MinimumLength = 8, ErrorMessage = "La contraseña debe tener al menos 8 caracteres")]
     [DataType(DataType.Password)]
     public string Password { get; set; } = string.Empty;
 

@@ -5,10 +5,12 @@ using LostPeople.Web.ViewModels;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 
 namespace LostPeople.Web.Controllers;
 
+[EnableRateLimiting("Public")]
 public class AccountController : Controller
 {
     private readonly LostPeopleDbContext _context;

@@ -3,12 +3,16 @@ using LostPeople.Application;
 using LostPeople.Infrastructure;
 using LostPeople.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var localConfigFile = Path.Combine(AppContext.BaseDirectory, "appsettings.Local.json");
+builder.Configuration.AddJsonFile(localConfigFile, optional: true);
 
 var logConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -71,29 +75,53 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddHealthChecks();
 
+var forwardingScheme = Environment.GetEnvironmentVariable("FORWARDED_SCHEME");
+if (!string.IsNullOrEmpty(forwardingScheme))
+{
+    builder.Services.Configure<ForwardedHeadersOptions>(options =>
+    {
+        options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+        options.KnownNetworks.Clear();
+        options.KnownProxies.Clear();
+    });
+}
+
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+if (!string.IsNullOrEmpty(forwardingScheme))
+    app.UseForwardedHeaders();
+
+try
 {
+    using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<LostPeopleDbContext>();
+    var connStr = db.Database.GetConnectionString();
+    Log.Information("Attempting database migration with connection string: {ConnStr}", connStr?.Replace("Password=", "Password=***"));
+
     await db.Database.MigrateAsync();
 
-    var connStr = db.Database.GetConnectionString();
     if (!string.IsNullOrEmpty(connStr) && !await QuartzSchemaExistsAsync(connStr))
     {
         await InitializeQuartzSchemaAsync(connStr);
     }
 
     await DbInitializer.SeedAsync(db);
+    Log.Information("Database initialization completed successfully");
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "Application failed to initialize database");
+    throw;
 }
 
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
     app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
-app.UseHttpsRedirection();
+app.UseStatusCodePagesWithReExecute("/Home/Error");
 
 app.Use(async (context, next) =>
 {
@@ -113,7 +141,18 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = ctx =>
+    {
+        var headers = ctx.Context.Response.GetTypedHeaders();
+        headers.CacheControl = new Microsoft.Net.Http.Headers.CacheControlHeaderValue
+        {
+            Public = true,
+            MaxAge = TimeSpan.FromDays(30)
+        };
+    }
+});
 app.UseRouting();
 app.UseRateLimiter();
 app.UseCors();
@@ -140,7 +179,13 @@ static async Task<bool> QuartzSchemaExistsAsync(string connStr)
 
 static async Task InitializeQuartzSchemaAsync(string connStr)
 {
-    var sql = await File.ReadAllTextAsync("quartz-schema.sql");
+    var schemaPath = Path.Combine(AppContext.BaseDirectory, "quartz-schema.sql");
+    if (!File.Exists(schemaPath))
+    {
+        Log.Warning("quartz-schema.sql not found at {Path}, skipping Quartz schema initialization", schemaPath);
+        return;
+    }
+    var sql = await File.ReadAllTextAsync(schemaPath);
     var batches = sql.Split("GO", StringSplitOptions.RemoveEmptyEntries);
     using var conn = new SqlConnection(connStr);
     await conn.OpenAsync();

@@ -1,5 +1,6 @@
 using LostPeople.Domain.Entities;
 using LostPeople.Infrastructure.Services;
+using Serilog;
 
 namespace LostPeople.Infrastructure.Persistence;
 
@@ -172,6 +173,7 @@ public static class DbInitializer
                 AceptoTerminos = true,
                 AceptoConfidencialidad = true
             });
+            Log.Warning("Default admin account created (admin@lostpeople.do). CHANGE PASSWORD immediately in production.");
         }
 
         if (!context.Usuarios.Any(u => u.Email == "verificador@lostpeople.do"))
@@ -188,6 +190,7 @@ public static class DbInitializer
                 AceptoTerminos = true,
                 AceptoConfidencialidad = true
             });
+            Log.Warning("Default verifier account created (verificador@lostpeople.do). CHANGE PASSWORD immediately in production.");
         }
 
         if (!context.PersonasReportadas.Any())

@@ -48,7 +48,6 @@ public class NotificationService : INotificationService
         }
 
         _logger.LogInformation("SMS enviado a {Phone}: {Message}", toPhone, message);
-        await Task.CompletedTask;
     }
 
     public async Task SendEmailAsync(string toEmail, string subject, string body, CancellationToken ct = default)
