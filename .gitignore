@@ -7,6 +7,13 @@ obj/
 *.DotSettings
 *.DotSettings.user
 
+# Local settings (contains secrets)
+src/Web/appsettings.Local.json
+
+# Publish output
+publish/
+*.zip
+
 # Logs
 logs/
 *.log
