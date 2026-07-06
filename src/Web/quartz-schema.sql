@@ -25,8 +25,8 @@ BEGIN
         [TRIGGER_NAME] nvarchar(200) NOT NULL,
         [TRIGGER_GROUP] nvarchar(200) NOT NULL,
         [INSTANCE_NAME] nvarchar(200) NOT NULL,
-        [FIRED_TIME] datetime2 NOT NULL,
-        [SCHED_TIME] datetime2 NOT NULL,
+        [FIRED_TIME] bigint NOT NULL,
+        [SCHED_TIME] bigint NOT NULL,
         [PRIORITY] int NOT NULL,
         [STATE] nvarchar(16) NOT NULL,
         [JOB_NAME] nvarchar(200) NULL,
@@ -43,7 +43,7 @@ BEGIN
     CREATE TABLE [dbo].[QRTZ_SCHEDULER_STATE] (
         [SCHED_NAME] nvarchar(120) NOT NULL,
         [INSTANCE_NAME] nvarchar(200) NOT NULL,
-        [LAST_CHECKIN_TIME] datetime2 NOT NULL,
+        [LAST_CHECKIN_TIME] bigint NOT NULL,
         [CHECKIN_INTERVAL] bigint NOT NULL
     );
 
@@ -158,21 +158,21 @@ GO
 -- Check if columns exist and alter them
 IF COL_LENGTH('QRTZ_FIRED_TRIGGERS', 'FIRED_TIME') IS NOT NULL
 BEGIN
-    IF (SELECT system_type_id FROM sys.columns WHERE object_id = OBJECT_ID('QRTZ_FIRED_TRIGGERS') AND name = 'FIRED_TIME') = 61
+    IF (SELECT system_type_id FROM sys.columns WHERE object_id = OBJECT_ID('QRTZ_FIRED_TRIGGERS') AND name = 'FIRED_TIME') = 42
     BEGIN
-        ALTER TABLE [dbo].[QRTZ_FIRED_TRIGGERS] ALTER COLUMN [FIRED_TIME] datetime2;
+        ALTER TABLE [dbo].[QRTZ_FIRED_TRIGGERS] ALTER COLUMN [FIRED_TIME] bigint;
     END
-    IF (SELECT system_type_id FROM sys.columns WHERE object_id = OBJECT_ID('QRTZ_FIRED_TRIGGERS') AND name = 'SCHED_TIME') = 61
+    IF (SELECT system_type_id FROM sys.columns WHERE object_id = OBJECT_ID('QRTZ_FIRED_TRIGGERS') AND name = 'SCHED_TIME') = 42
     BEGIN
-        ALTER TABLE [dbo].[QRTZ_FIRED_TRIGGERS] ALTER COLUMN [SCHED_TIME] datetime2;
+        ALTER TABLE [dbo].[QRTZ_FIRED_TRIGGERS] ALTER COLUMN [SCHED_TIME] bigint;
     END
 END
 
 IF COL_LENGTH('QRTZ_SCHEDULER_STATE', 'LAST_CHECKIN_TIME') IS NOT NULL
 BEGIN
-    IF (SELECT system_type_id FROM sys.columns WHERE object_id = OBJECT_ID('QRTZ_SCHEDULER_STATE') AND name = 'LAST_CHECKIN_TIME') = 61
+    IF (SELECT system_type_id FROM sys.columns WHERE object_id = OBJECT_ID('QRTZ_SCHEDULER_STATE') AND name = 'LAST_CHECKIN_TIME') = 42
     BEGIN
-        ALTER TABLE [dbo].[QRTZ_SCHEDULER_STATE] ALTER COLUMN [LAST_CHECKIN_TIME] datetime2;
+        ALTER TABLE [dbo].[QRTZ_SCHEDULER_STATE] ALTER COLUMN [LAST_CHECKIN_TIME] bigint;
     END
 END
 
