@@ -267,9 +267,11 @@ El sistema puede conectarse a múltiples fuentes externas mediante un diseño ex
 ### Fuentes implementadas
 
 | Conector | Tipo | Método | Estado |
-|---|---|---|---|
-| **PoliciaNacionalConnector** | API REST | HTTP con Polly retry | Esqueleto (requiere endpoint real) |
-| **DatosGobDoConnector** | HTML Scraping | AngleSharp | Esqueleto (URL placeholder) |
+|---|---|---|---|---|
+| **PoliciaNacionalConnector** | HTML Scraping | AngleSharp + Polly retry | Completo — persiste en DB |
+| **DatosGobDoConnector** | API REST | JSON + Polly retry | Completo — persiste en DB |
+| **Emergencias911Connector** | API REST | JSON + Polly retry | Completo — nuevo |
+| **SnsHospitalarioConnector** | API REST | JSON + Polly retry | Completo — nuevo |
 | **HospitalSimuladoConnector** | Simulado | Datos sintéticos | Demostración funcional |
 
 ### Pipeline de ingesta
@@ -317,17 +319,22 @@ Los trabajos están configurados con `[DisallowConcurrentExecution]` para evitar
 - Auditoría: `Auditorias` con IP, UserAgent, valores anteriores/nuevos
 - Contraseñas: columna `PasswordHash` con capacidad para bcrypt/argon2
 
+### Implementado actualmente (adicional)
+
+- Rate limiting por IP con `System.Threading.RateLimiting`
+- Cifrado bcrypt para contraseñas (`BCrypt.Net-Next`)
+- Forwarded Headers para proxies reversos (IIS/nginx)
+- Security headers: CSP, X-Frame-Options, X-Content-Type-Options, HSTS
+- Cache estático con `Cache-Control: public, max-age=604800`
+
 ### Diseñado para implementación futura
 
 - Autenticación JWT o cookie-based
 - RBAC completo con matriz 8 roles × 15 permisos
-- Rate limiting por IP (3 reportes/hora, 1 verificación/hora)
-- Cifrado AES-256 en reposo para datos sensibles
 - ReCAPTCHA v3 en formularios públicos
 - Bloqueo por intentos fallidos (5 → 30 min)
 - 2FA opcional
 - Watermark en fotos
-- CSP, X-Frame-Options, X-Content-Type-Options
 
 ---
 
@@ -403,15 +410,18 @@ LostPeople/
 │   │   ├── Enums/              → AlertType, CaseStatus, DataSourceType, etc.
 │   │   └── Interfaces/         → IAggregateRoot, IEntity, IRepository, etc.
 │   ├── Application/            → Capa de aplicación
+│   │   ├── Coincidencias/      → ReviewCoincidenciaCommand + GetCoincidenciasQuery handlers
+│   │   ├── PersonasReportadas/ → CreateReportCommand + SearchPersonasQuery handlers
 │   │   ├── Common/
 │   │   │   ├── DTOs/           → ReporteDto, DashboardDto, MatchDto
-│   │   │   └── Interfaces/     → IAuditService, IMatchingService, etc.
+│   │   │   ├── Interfaces/     → IApplicationDbContext, IAuditService, IMatchingService, etc.
+│   │   │   └── Mappings/       → AutoMapper MappingProfile (7 DTOs)
 │   │   └── DependencyInjection.cs
 │   ├── Infrastructure/         → Capa de infraestructura
 │   │   ├── BackgroundJobs/     → ScrapingSchedulerJob, MatchingSchedulerJob, HealthCheckJob
 │   │   ├── Matching/           → FuzzyMatchingService (Jaro-Winkler)
 │   │   ├── Persistence/        → DbContext, Repository, UnitOfWork, Migrations
-│   │   ├── Scraping/           → PoliciaNacionalConnector, DatosGobDoConnector, etc.
+│   │   ├── Scraping/           → 5 conectores: PoliciaNacional, DatosGobDo, Emergencias911, SnsHospitalario, HospitalSimulado
 │   │   ├── Services/           → AuditService, CodigoGenerator, NotificationService
 │   │   └── DependencyInjection.cs
 │   └── Web/                    → Capa de presentación

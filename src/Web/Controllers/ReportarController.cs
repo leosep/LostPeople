@@ -1,6 +1,5 @@
 using LostPeople.Application.Common.Interfaces;
 using LostPeople.Domain.Entities;
-using LostPeople.Domain.Interfaces;
 using LostPeople.Infrastructure.Persistence;
 using LostPeople.Infrastructure.Services;
 using LostPeople.Web.ViewModels;
@@ -136,6 +135,21 @@ public class ReportarController : Controller
             }
             persona.FotoOriginalUrl = $"/uploads/fotos/{fileName}";
             _context.PersonasReportadas.Update(persona);
+
+            var archivo = new Archivo
+            {
+                PersonaId = persona.Id,
+                NombreOriginal = model.FotoPersona.FileName,
+                RutaArchivo = $"/uploads/fotos/{fileName}",
+                TipoContenido = model.FotoPersona.ContentType,
+                TamanoBytes = model.FotoPersona.Length,
+                Categoria = "FotoPersona",
+                Publico = false,
+                FechaSubida = DateTime.UtcNow,
+                SubidoPorUsuarioId = usuarioAnonimo.Id
+            };
+            _context.Archivos.Add(archivo);
+
             await _context.SaveChangesAsync();
         }
 

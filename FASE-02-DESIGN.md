@@ -612,9 +612,11 @@ public class IngestionError
 ### 3.4 Implementaciones por fuente (MVP)
 
 | Conector | Fuente | URL base | Selector HTML | Frecuencia |
-|---|---|---|---|---|
+|---|---|---|---|---|---|
 | `PoliciaNacionalConnector` | PN boletines desaparecidos | (por determinar: ej. https://policianacional.gob.do/desaparecidos) | `.desaparecidos-lista .item` | Cada 30 min |
 | `DatosGobDoConnector` | datos.gob.do | `https://datos.gob.do/api/3/action/` | N/A (API JSON) | Cada 60 min |
+| `Emergencias911Connector` | 911 emergencias | API REST (por determinar) | N/A (API JSON) | Cada 30 min |
+| `SnsHospitalarioConnector` | SNS pacientes NN | API REST (por determinar) | N/A (API JSON) | Cada 60 min |
 | `HospitalSimuladoConnector` | Hospital sintético (demo) | N/A (genera datos) | N/A | A demanda |
 
 ### 3.5 Manejo de fallos y resiliencia

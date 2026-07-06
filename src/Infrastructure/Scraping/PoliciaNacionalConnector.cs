@@ -1,7 +1,12 @@
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.RegularExpressions;
 using LostPeople.Application.Common.Interfaces;
+using LostPeople.Domain.Entities;
+using LostPeople.Infrastructure.Persistence;
 using AngleSharp;
 using AngleSharp.Dom;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace LostPeople.Infrastructure.Scraping;
@@ -10,14 +15,16 @@ public class PoliciaNacionalConnector : IDataSourceConnector
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<PoliciaNacionalConnector> _logger;
+    private readonly LostPeopleDbContext _context;
 
-    public string SourceCode => "POLICIA_NACIONAL";
+    public string SourceCode => "PN_CRITICAL_MISSING";
     public string SourceName => "Policía Nacional - Boletines y personas desaparecidas";
 
-    public PoliciaNacionalConnector(HttpClient httpClient, ILogger<PoliciaNacionalConnector> logger)
+    public PoliciaNacionalConnector(HttpClient httpClient, ILogger<PoliciaNacionalConnector> logger, LostPeopleDbContext context)
     {
         _httpClient = httpClient;
         _logger = logger;
+        _context = context;
     }
 
     public bool CanHandle(string sourceType) =>
@@ -30,6 +37,14 @@ public class PoliciaNacionalConnector : IDataSourceConnector
     {
         var result = new IngestionResult();
         var startTime = DateTime.UtcNow;
+
+        var fuente = await _context.FuentesDatos.FirstOrDefaultAsync(f => f.Codigo == SourceCode, ct);
+        if (fuente == null)
+        {
+            result.Errors.Add(new IngestionError { Type = "CONFIG", Message = $"FuenteDatos '{SourceCode}' not found in database", IsFatal = true });
+            result.Duration = DateTime.UtcNow - startTime;
+            return result;
+        }
 
         var urls = new[]
         {
@@ -50,12 +65,7 @@ public class PoliciaNacionalConnector : IDataSourceConnector
                 if (!response.IsSuccessStatusCode)
                 {
                     _logger.LogWarning("PoliciaNacional: HTTP {Status} para {Url}", (int)response.StatusCode, url);
-                    result.Errors.Add(new IngestionError
-                    {
-                        Type = "HTTP_ERROR",
-                        Message = $"HTTP {(int)response.StatusCode} para {url}",
-                        IsFatal = false
-                    });
+                    result.Errors.Add(new IngestionError { Type = "HTTP_ERROR", Message = $"HTTP {(int)response.StatusCode} para {url}", IsFatal = false });
                     continue;
                 }
 
@@ -63,8 +73,8 @@ public class PoliciaNacionalConnector : IDataSourceConnector
                 result.RawResponsePreview = html.Length > 2000 ? html[..2000] : html;
 
                 var config = Configuration.Default;
-                var context = BrowsingContext.New(config);
-                var document = await context.OpenAsync(req => req.Content(html), ct);
+                var browsingContext = BrowsingContext.New(config);
+                var document = await browsingContext.OpenAsync(req => req.Content(html), ct);
 
                 var selectors = new[]
                 {
@@ -91,17 +101,13 @@ public class PoliciaNacionalConnector : IDataSourceConnector
                 if (items == null || items.Length == 0)
                 {
                     _logger.LogWarning("PoliciaNacional: 0 registros en {Url} - posible cambio estructural", url);
-                    result.Errors.Add(new IngestionError
-                    {
-                        Type = "NO_DATA",
-                        Message = $"Sin registros en {url}",
-                        IsFatal = false
-                    });
+                    result.Errors.Add(new IngestionError { Type = "NO_DATA", Message = $"Sin registros en {url}", IsFatal = false });
                     continue;
                 }
 
                 result.RecordsExtracted += items.Length;
 
+                var nuevosRegistros = new List<RegistroIngerido>();
                 foreach (var item in items.Take(50))
                 {
                     var texto = item.TextContent.Trim();
@@ -110,8 +116,34 @@ public class PoliciaNacionalConnector : IDataSourceConnector
                     var nombre = ExtractNombre(texto);
                     if (string.IsNullOrEmpty(nombre)) continue;
 
-                    result.RecordsInserted++;
+                    var hash = ComputeHash(texto);
+                    var existe = await _context.RegistrosIngeridos.AnyAsync(r => r.HashContenido == hash && r.FuenteId == fuente.Id, ct);
+                    if (existe)
+                    {
+                        result.RecordsDuplicated++;
+                        continue;
+                    }
+
+                    nuevosRegistros.Add(new RegistroIngerido
+                    {
+                        FuenteId = fuente.Id,
+                        PrimerNombre = nombre,
+                        DescripcionFisica = texto.Length > 2000 ? texto[..2000] : texto,
+                        UrlOrigen = url,
+                        HtmlCrudo = texto.Length > 4000 ? texto[..4000] : texto,
+                        FechaIngesta = DateTime.UtcNow,
+                        HashContenido = hash,
+                        CoincidenciaProcesada = false
+                    });
                 }
+
+                if (nuevosRegistros.Count > 0)
+                {
+                    _context.RegistrosIngeridos.AddRange(nuevosRegistros);
+                    await _context.SaveChangesAsync(ct);
+                }
+
+                result.RecordsInserted += nuevosRegistros.Count;
 
                 result.Success = true;
                 _logger.LogInformation("PoliciaNacional: {Insertados} registros insertados de {Url}", result.RecordsInserted, url);
@@ -120,32 +152,17 @@ public class PoliciaNacionalConnector : IDataSourceConnector
             catch (TaskCanceledException)
             {
                 _logger.LogWarning("PoliciaNacional: timeout en {Url}", url);
-                result.Errors.Add(new IngestionError
-                {
-                    Type = "TIMEOUT",
-                    Message = $"Timeout en {url}",
-                    IsFatal = false
-                });
+                result.Errors.Add(new IngestionError { Type = "TIMEOUT", Message = $"Timeout en {url}", IsFatal = false });
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "PoliciaNacional: error HTTP en {Url}", url);
-                result.Errors.Add(new IngestionError
-                {
-                    Type = "HTTP_ERROR",
-                    Message = ex.Message,
-                    IsFatal = false
-                });
+                result.Errors.Add(new IngestionError { Type = "HTTP_ERROR", Message = ex.Message, IsFatal = false });
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "PoliciaNacional: error procesando {Url}", url);
-                result.Errors.Add(new IngestionError
-                {
-                    Type = "PARSE_ERROR",
-                    Message = ex.Message,
-                    IsFatal = false
-                });
+                result.Errors.Add(new IngestionError { Type = "PARSE_ERROR", Message = ex.Message, IsFatal = false });
             }
         }
 
@@ -174,5 +191,11 @@ public class PoliciaNacionalConnector : IDataSourceConnector
         }
 
         return null;
+    }
+
+    private static string ComputeHash(string input)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }

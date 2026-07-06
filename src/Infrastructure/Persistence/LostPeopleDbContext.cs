@@ -1,9 +1,10 @@
+using LostPeople.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using LostPeople.Domain.Entities;
 
 namespace LostPeople.Infrastructure.Persistence;
 
-public class LostPeopleDbContext : DbContext
+public class LostPeopleDbContext : DbContext, IApplicationDbContext
 {
     public LostPeopleDbContext(DbContextOptions<LostPeopleDbContext> options) : base(options) { }
 

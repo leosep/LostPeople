@@ -20,36 +20,36 @@
 
 ## MÓDULO 0 — PROYECTO BASE Y ARQUITECTURA
 
-| ID | Tarea | DoD | Dependencias | Skill | Est. |
-|---|---|---|---|---|---|
-| T-001 | Crear solución .NET 8 con Clean Architecture: 4 proyectos (Domain, Application, Infrastructure, Web) | Solución compila, proyectos referenciados correctamente, carpetas creadas con estructura estándar | — | S-06 | 2h |
-| T-002 | Configurar DbContext, cadena conexión SQL Server, y primera migración | `dotnet ef migrations add InitialCreate` ejecuta sin errores, BD creada en SQL Server | T-001 | S-06 | 2h |
-| T-003 | Implementar Repository<T> genérico + UnitOfWork + interfaces en Domain | Tests unitarios de repositorio pasan, CRUD básico funcional | T-002 | S-06 | 4h |
-| T-004 | Configurar Serilog (archivo + consola + SQL Server), middleware de error handling global | Logs se escriben en los 3 sinks, error handling devuelve JSON consistente | T-001 | S-06 | 2h |
-| T-005 | Configurar Tailwind CSS (compilado con CLI o CDN), layout base _Layout.cshtml con header/footer/nav | Layout responsive se renderiza en todas las páginas, Tailwind utilitarias funcionan | T-001 | S-10 | 2h |
-| T-006 | Configurar AutoMapper + FluentValidation global | Mappings se registran automáticamente, validación se dispara en ModelState | T-001 | S-06 | 1h |
-| T-007 | Configurar Quartz.NET con scheduler persistente | Job de prueba se ejecuta en el intervalo configurado, log se escribe | T-002 | S-12 | 2h |
-| T-008 | Configurar proyecto de tests (xUnit + Moq + FluentAssertions) | `dotnet test` corre y pasa 1 test de ejemplo | T-001 | S-06 | 1h |
+| ID | Tarea | DoD | Dependencias | Skill | Est. | Estado |
+|---|---|---|---|---|---|---|
+| T-001 | Crear solución .NET 8 con Clean Architecture: 4 proyectos (Domain, Application, Infrastructure, Web) | Solución compila, proyectos referenciados correctamente, carpetas creadas con estructura estándar | — | S-06 | 2h | ✅ |
+| T-002 | Configurar DbContext, cadena conexión SQL Server, y primera migración | `dotnet ef migrations add InitialCreate` ejecuta sin errores, BD creada en SQL Server | T-001 | S-06 | 2h | ✅ |
+| T-003 | Implementar Repository<T> genérico + UnitOfWork + interfaces en Domain | Tests unitarios de repositorio pasan, CRUD básico funcional | T-002 | S-06 | 4h | ✅ |
+| T-004 | Configurar Serilog (archivo + consola + SQL Server), middleware de error handling global | Logs se escriben en los 3 sinks, error handling devuelve JSON consistente | T-001 | S-06 | 2h | ✅ |
+| T-005 | Configurar Tailwind CSS (compilado con CLI o CDN), layout base _Layout.cshtml con header/footer/nav | Layout responsive se renderiza en todas las páginas, Tailwind utilitarias funcionan | T-001 | S-10 | 2h | ✅ |
+| T-006 | Configurar AutoMapper + FluentValidation global | Mappings se registran automáticamente, validación se dispara en ModelState | T-001 | S-06 | 1h | ✅ |
+| T-007 | Configurar Quartz.NET con scheduler persistente (Quartz.Serialization.SystemTextJson) | Job de prueba se ejecuta en el intervalo configurado, log se escribe | T-002 | S-12 | 2h | ✅ |
+| T-008 | Configurar proyecto de tests (xUnit + Moq + FluentAssertions) | `dotnet test` corre y pasa 1 test de ejemplo | T-001 | S-06 | 1h | ⬜ Pendiente |
 
-**Total M0: ~16h**
+**Total M0: ~16h — 7/8 completadas**
 
 ---
 
 ## MÓDULO 1 — REPORTE CIUDADANO DE PERSONA DESAPARECIDA
 
-| ID | Tarea | DoD | Dependencias | Skill | Est. |
-|---|---|---|---|---|---|
-| T-009 | Crear entidades del core: PersonaReportada, Reporte, EstadoCaso, ZonaGeografica | Entidades creadas en Domain, migración generada, BD actualizada | T-002 | S-06 | 3h |
-| T-010 | Crear seed data de Estados de Caso y ZonasGeográficas (32 provincias + DN + municipios) | Seed ejecutado, datos disponibles en BD | T-009 | S-06 | 2h |
-| T-011 | Implementar CreateReportUseCase con validación (FluentValidation) | Tests pasan: reporte válido → OK, campos inválidos → error específico | T-009, T-006 | S-06 | 4h |
-| T-012 | Crear ViewModel y Razor View del formulario step-by-step (6 pasos) | Formulario se renderiza, navegación entre pasos funciona, datos persisten en sesión | T-005, T-011 | S-03, S-10 | 6h |
-| T-013 | Implementar subida de foto con redimensionamiento (3 tamaños) + watermark | Foto se sube, se redimensiona, watermark con ID se aplica, se guarda en FileStorage | T-009 | S-06 | 3h |
-| T-014 | Implementar flujo de verificación de contacto (enviar código SMS/email) | Código se envía, formulario espera confirmación, reporte queda "Pendiente" hasta verificación | T-011 | S-07 | 3h |
-| T-015 | Implementar pantalla de confirmación con código de seguimiento | Código se genera (formato LP-XXXXX), se muestra, se envía al contacto | T-014 | S-03 | 2h |
-| T-016 | Implementar GetReportStatusUseCase (por código de seguimiento) | Endpoint devuelve estado actual del reporte con línea de tiempo | T-009 | S-06 | 2h |
-| T-017 | Crear vista de seguimiento por código | Vista se renderiza con datos del reporte, línea de tiempo, acciones disponibles | T-016, T-005 | S-03 | 2h |
+| ID | Tarea | DoD | Dependencias | Skill | Est. | Estado |
+|---|---|---|---|---|---|---|
+| T-009 | Crear entidades del core: PersonaReportada, Reporte, EstadoCaso, ZonaGeografica | Entidades creadas en Domain, migración generada, BD actualizada | T-002 | S-06 | 3h | ✅ |
+| T-010 | Crear seed data de Estados de Caso y ZonasGeográficas (32 provincias + DN + municipios) | Seed ejecutado, datos disponibles en BD | T-009 | S-06 | 2h | ✅ |
+| T-011 | Implementar CreateReportUseCase con validación (FluentValidation) + MediatR command/handler | Tests pasan: reporte válido → OK, campos inválidos → error específico | T-009, T-006 | S-06 | 4h | ✅ |
+| T-012 | Crear ViewModel y Razor View del formulario step-by-step (6 pasos) | Formulario se renderiza, navegación entre pasos funciona, datos persisten en sesión | T-005, T-011 | S-03, S-10 | 6h | ✅ |
+| T-013 | Implementar subida de foto con validación + guardado Archivo entity | Foto se sube, se valida (JPG/PNG/GIF/WebP, <5MB), se guarda en FileStorage y entidad Archivo | T-009 | S-06 | 3h | ✅ |
+| T-014 | Implementar flujo de verificación de contacto (enviar código SMS/email) — INotificationService | Código se envía, formulario espera confirmación, reporte queda "Pendiente" hasta verificación | T-011 | S-07 | 3h | ✅ |
+| T-015 | Implementar pantalla de confirmación con código de seguimiento | Código se genera (formato LP-XXXXX), se muestra, se envía al contacto | T-014 | S-03 | 2h | ✅ |
+| T-016 | Implementar GetReportStatusUseCase (por código de seguimiento) | Endpoint devuelve estado actual del reporte con línea de tiempo | T-009 | S-06 | 2h | ⬜ Falta vista dedicada |
+| T-017 | Crear vista de seguimiento por código | Vista se renderiza con datos del reporte, línea de tiempo, acciones disponibles | T-016, T-005 | S-03 | 2h | ⬜ Pendiente |
 
-**Total M1: ~27h**
+**Total M1: ~27h — 6/8 completadas**
 
 ---
 
@@ -68,37 +68,37 @@
 
 ## MÓDULO 3 — INGESTA DE DATOS EXTERNOS
 
-| ID | Tarea | DoD | Dependencias | Skill | Est. |
-|---|---|---|---|---|---|
-| T-022 | Crear entidades: FuenteDatos, RegistroIngerido | Entidades en Domain, migración, BD actualizada | T-002 | S-06 | 2h |
-| T-023 | Implementar interface IDataSourceConnector + IngestionResult | Interfaz definida en Domain, implementación base creada | T-022 | S-04 | 2h |
-| T-024 | Implementar DataSourceConnectorFactory (selecciona conector por tipo de fuente) | Factory retorna el conector correcto dado un FuenteDatos.Type | T-023 | S-04 | 1h |
-| T-025 | Implementar HttpClient resiliente con Polly (retry, circuit breaker, timeout) | Test: HTTP 503 → retry 3 veces. HTTP 429 → espera Retry-After. Timeout 30s. | T-023 | S-04, S-12 | 3h |
-| T-026 | Implementar PoliciaNacionalConnector (scraper HTML con AngleSharp) | Conector extrae registros de la URL objetivo, parsea con selectores CSS, devuelve IngestionResult | T-025 | S-04 | 6h |
-| T-027 | Implementar DatosGobDoConnector (cliente API REST CKAN) | Conector consume API de datos.gob.do, parsea JSON, devuelve IngestionResult | T-025 | S-04, S-08 | 4h |
-| T-028 | Implementar HospitalSimuladoConnector (genera datos sintéticos para demo) | Conector genera registros sintéticos verosímiles con Bogus, flag DatosSinteticos=true | T-023 | S-04 | 2h |
-| T-029 | Implementar pipeline de ingestión: Fetch → Parse → Extract → Validate → Dedup → Store → Log | Pipeline completo ejecuta todos los pasos, logs en cada etapa, maneja errores parciales | T-024, T-026, T-027 | S-04 | 6h |
-| T-030 | Implementar ScrapingSchedulerJob (Quartz.NET) con schedule configurable por fuente | Job se ejecuta según el IntervaloMinutos de cada FuenteDatos, resultados se almacenan | T-029, T-007 | S-12 | 3h |
-| T-031 | Implementar detección de cambio estructural (0 registros detectados → alerta admin) | Si 2 ejecuciones consecutivas devuelven 0 registros donde antes >0, fuente marcada "Caída" | T-029 | S-04 | 2h |
-| T-032 | Crear seed de fuentes de datos (PN, datos.gob.do, HospitalSimulado) | Seed ejecutado, fuentes configuradas en BD, schedules activos | T-022, T-030 | S-04, S-08 | 1h |
+| ID | Tarea | DoD | Dependencias | Skill | Est. | Estado |
+|---|---|---|---|---|---|---|
+| T-022 | Crear entidades: FuenteDatos, RegistroIngerido | Entidades en Domain, migración, BD actualizada | T-002 | S-06 | 2h | ✅ |
+| T-023 | Implementar interface IDataSourceConnector + IngestionResult | Interfaz definida en Domain, implementación base creada | T-022 | S-04 | 2h | ✅ |
+| T-024 | Implementar DataSourceConnectorFactory (selecciona conector por tipo de fuente) | Factory retorna el conector correcto dado un FuenteDatos.Type | T-023 | S-04 | 1h | ✅ |
+| T-025 | Implementar HttpClient resiliente con Polly (retry, circuit breaker, timeout) | Test: HTTP 503 → retry 3 veces. HTTP 429 → espera Retry-After. Timeout 30s. | T-023 | S-04, S-12 | 3h | ✅ |
+| T-026 | Implementar PoliciaNacionalConnector (scraper HTML con AngleSharp) + persistencia DB | Conector extrae registros, parsea con selectores CSS, persiste RegistroIngerido en DB | T-025 | S-04 | 6h | ✅ |
+| T-027 | Implementar DatosGobDoConnector (cliente API REST CKAN) + persistencia DB | Conector consume API, parsea JSON, persiste RegistroIngerido en DB | T-025 | S-04, S-08 | 4h | ✅ |
+| T-028 | Implementar HospitalSimuladoConnector (genera datos sintéticos para demo) | Conector genera registros sintéticos verosímiles, flag DatosSinteticos=true | T-023 | S-04 | 2h | ✅ |
+| T-029 | Implementar pipeline de ingestión: Fetch → Parse → Extract → Validate → Dedup → Store → Log | Pipeline completo ejecuta todos los pasos, logs en cada etapa, maneja errores parciales | T-024, T-026, T-027 | S-04 | 6h | ✅ |
+| T-030 | Implementar ScrapingSchedulerJob (Quartz.NET) con schedule configurable por fuente | Job se ejecuta según el IntervaloMinutos de cada FuenteDatos, resultados se almacenan | T-029, T-007 | S-12 | 3h | ✅ |
+| T-031 | Implementar detección de cambio estructural (0 registros detectados → alerta admin) | Si 2 ejecuciones consecutivas devuelven 0 registros donde antes >0, fuente marcada "Caída" | T-029 | S-04 | 2h | ⬜ Pendiente |
+| T-032 | Crear seed de fuentes de datos (PN, datos.gob.do, HospitalSimulado, Emergencias911, SNS) | Seed ejecutado, fuentes configuradas en BD, schedules activos | T-022, T-030 | S-04, S-08 | 1h | ✅ |
 
-**Total M3: ~32h**
+**Total M3: ~32h — 10/11 completadas**
 
 ---
 
 ## MÓDULO 4 — MOTOR DE COINCIDENCIAS (MATCHING)
 
-| ID | Tarea | DoD | Dependencias | Skill | Est. |
-|---|---|---|---|---|---|
-| T-033 | Implementar FuzzySharp wrapper con algoritmos: JaroWinkler, Levenshtein, TokenSortRatio | Tests: "Juan Pérez" ≈ "Juan C. Pérez" → score >0.8. "Pedro" vs "Juan" → score <0.3 | — | S-05 | 4h |
-| T-034 | Implementar NormalizadorNombresHispanos (quitar acentos, expandir abreviaturas, manejar "De", "Del", "De la") | Test: "José María" → "Jose Maria", "Mª del Carmen" → "Maria del Carmen" | T-033 | S-05 | 3h |
-| T-035 | Implementar BlockingKeyGenerator (agrupa por primeras letras del apellido) | Test: "Pérez" → "PE", "Martínez" → "MA" | T-033 | S-05 | 1h |
-| T-036 | Implementar ScoreWeightCalculator con ponderación configurable | Test: score general se calcula correctamente según pesos. Umbral configurable desde DB. | T-033 | S-05 | 3h |
-| T-037 | Implementar MatchingJob (Quartz.NET): procesa RegistrosIngeridos no procesados contra Reportes activos | Job se ejecuta, crea Coincidencia para cada par que supera umbral, marca registros como procesados | T-035, T-036, T-007 | S-05, S-12 | 6h |
-| T-038 | Implementar almacenamiento de resultados de matching (entidad Coincidencia) | Coincidencias se persisten en BD con scores desglosados | T-022, T-033 | S-05 | 2h |
-| T-039 | Implementar re-matching cuando se crea un nuevo reporte (matching incremental) | Al crear un reporte, se ejecuta matching contra todos los registros ingeridos no vinculados | T-037 | S-05 | 3h |
+| ID | Tarea | DoD | Dependencias | Skill | Est. | Estado |
+|---|---|---|---|---|---|---|
+| T-033 | Implementar FuzzySharp wrapper con algoritmos: JaroWinkler, Levenshtein, TokenSortRatio | Tests: "Juan Pérez" ≈ "Juan C. Pérez" → score >0.8. "Pedro" vs "Juan" → score <0.3 | — | S-05 | 4h | ✅ |
+| T-034 | Implementar NormalizadorNombresHispanos (quitar acentos, expandir abreviaturas, manejar "De", "Del", "De la") | Test: "José María" → "Jose Maria", "Mª del Carmen" → "Maria del Carmen" | T-033 | S-05 | 3h | ✅ |
+| T-035 | Implementar BlockingKeyGenerator (agrupa por primeras letras del apellido) | Test: "Pérez" → "PE", "Martínez" → "MA" | T-033 | S-05 | 1h | ✅ |
+| T-036 | Implementar ScoreWeightCalculator con ponderación configurable | Test: score general se calcula correctamente según pesos. Umbral configurable desde DB. | T-033 | S-05 | 3h | ✅ |
+| T-037 | Implementar MatchingJob (Quartz.NET): procesa RegistrosIngeridos no procesados contra Reportes activos | Job se ejecuta, crea Coincidencia para cada par que supera umbral, marca registros como procesados | T-035, T-036, T-007 | S-05, S-12 | 6h | ✅ |
+| T-038 | Implementar almacenamiento de resultados de matching (entidad Coincidencia) | Coincidencias se persisten en BD con scores desglosados | T-022, T-033 | S-05 | 2h | ✅ |
+| T-039 | Implementar re-matching cuando se crea un nuevo reporte (matching incremental) | Al crear un reporte, se ejecuta matching contra todos los registros ingeridos no vinculados | T-037 | S-05 | 3h | ✅ |
 
-**Total M4: ~22h**
+**Total M4: ~22h — 7/7 completadas**
 
 ---
 

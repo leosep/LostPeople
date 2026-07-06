@@ -36,9 +36,11 @@ public static class DependencyInjection
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IMatchingService, FuzzyMatchingService>();
 
-        services.AddScoped<PoliciaNacionalConnector>();
-        services.AddScoped<DatosGobDoConnector>();
-        services.AddScoped<HospitalSimuladoConnector>();
+        services.AddScoped<IDataSourceConnector, PoliciaNacionalConnector>();
+        services.AddScoped<IDataSourceConnector, DatosGobDoConnector>();
+        services.AddScoped<IDataSourceConnector, HospitalSimuladoConnector>();
+        services.AddScoped<IDataSourceConnector, Emergencias911Connector>();
+        services.AddScoped<IDataSourceConnector, SnsHospitalarioConnector>();
         services.AddScoped<DataSourceConnectorFactory>();
 
         services.AddHttpClient<PoliciaNacionalConnector>(client =>
@@ -55,12 +57,24 @@ public static class DependencyInjection
             client.DefaultRequestHeaders.Add("Accept", "application/json");
         });
 
+        services.AddHttpClient<Emergencias911Connector>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(15);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
+        services.AddHttpClient<SnsHospitalarioConnector>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(20);
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+        });
+
         services.AddQuartz(q =>
         {
             q.UsePersistentStore(store =>
             {
                 store.UseSqlServer(connStr);
-                store.UseNewtonsoftJsonSerializer();
+                store.UseSystemTextJsonSerializer();
                 store.UseClustering();
                 store.PerformSchemaValidation = true;
             });

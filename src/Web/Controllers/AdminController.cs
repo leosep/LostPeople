@@ -1,4 +1,7 @@
+using LostPeople.Application.Coincidencias.Commands;
+using LostPeople.Domain.Entities;
 using LostPeople.Infrastructure.Persistence;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -11,10 +14,12 @@ namespace LostPeople.Web.Controllers;
 public class AdminController : Controller
 {
     private readonly LostPeopleDbContext _context;
+    private readonly IMediator _mediator;
 
-    public AdminController(LostPeopleDbContext context)
+    public AdminController(LostPeopleDbContext context, IMediator mediator)
     {
         _context = context;
+        _mediator = mediator;
     }
 
     public async Task<IActionResult> Index()
@@ -73,13 +78,19 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RevisarCoincidencia(int id, string estado)
     {
-        var coincidencia = await _context.Coincidencias.FindAsync(id);
-        if (coincidencia == null) return NotFound();
+        var userIdStr = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(userIdStr, out var userId))
+            return Unauthorized();
 
-        coincidencia.Revisada = true;
-        coincidencia.ResultadoRevision = estado;
-        coincidencia.FechaRevision = DateTime.UtcNow;
-        await _context.SaveChangesAsync();
+        var result = await _mediator.Send(new ReviewCoincidenciaCommand
+        {
+            CoincidenciaId = id,
+            RevisorUsuarioId = userId,
+            Resultado = estado,
+            Notas = null
+        });
+
+        if (!result) return NotFound();
 
         TempData["Mensaje"] = "Coincidencia actualizada correctamente.";
         return RedirectToAction("Coincidencias");
