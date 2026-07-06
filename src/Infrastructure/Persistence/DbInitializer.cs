@@ -8,7 +8,25 @@ public static class DbInitializer
 {
     public static async Task SeedAsync(LostPeopleDbContext context)
     {
-        if (context.EstadosCaso.Any()) return;
+        // Check if seed data already exists (including personas and reportes)
+        if (context.PersonasReportadas.Any() || context.Reportes.Any()) return;
+
+        // Clear any stale reference data that may exist (from previous failed seeding attempts)
+        if (context.PersonasReportadas.Any() || context.Reportes.Any() || context.FuentesDatos.Any() || context.ZonasGeograficas.Any() || context.Roles.Any() || context.EstadosCaso.Any())
+        {
+            context.PersonasReportadas.RemoveRange(context.PersonasReportadas);
+            context.Reportes.RemoveRange(context.Reportes);
+            context.Archivos.RemoveRange(context.Archivos);
+            context.Notificaciones.RemoveRange(context.Notificaciones);
+            context.Auditorias.RemoveRange(context.Auditorias);
+            context.SesionesUsuario.RemoveRange(context.SesionesUsuario);
+            context.Usuarios.RemoveRange(context.Usuarios);
+            context.FuentesDatos.RemoveRange(context.FuentesDatos);
+            context.ZonasGeograficas.RemoveRange(context.ZonasGeograficas);
+            context.Roles.RemoveRange(context.Roles);
+            context.EstadosCaso.RemoveRange(context.EstadosCaso);
+            await context.SaveChangesAsync();
+        }
 
         var estados = new List<EstadoCaso>
         {
@@ -159,192 +177,196 @@ public static class DbInitializer
         };
         context.FuentesDatos.AddRange(fuentes);
 
-        if (!context.Usuarios.Any(u => u.Email == "admin@lostpeople.do"))
+        await context.SaveChangesAsync();
+
+        // Query actual role and estado IDs after save
+        var adminRoleId = context.Roles.First(r => r.Nombre == "Admin").Id;
+        var verifRoleId = context.Roles.First(r => r.Nombre == "Voluntario").Id;
+        var recibidoEstadoId = context.EstadosCaso.First(e => e.Codigo == "RECIBIDO").Id;
+        var verificacionEstadoId = context.EstadosCaso.First(e => e.Codigo == "VERIFICACION").Id;
+        var coincidenciaEstadoId = context.EstadosCaso.First(e => e.Codigo == "COINCIDENCIA").Id;
+        var localizadoEstadoId = context.EstadosCaso.First(e => e.Codigo == "LOCALIZADO_VIVO").Id;
+
+        context.Usuarios.Add(new Usuario
         {
-            context.Usuarios.Add(new Usuario
+            NombreCompleto = "Administrador",
+            Email = "admin@lostpeople.do",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+            RolId = adminRoleId,
+            Activo = true,
+            Verificado = true,
+            FechaCreacion = DateTime.UtcNow,
+            AceptoTerminos = true,
+            AceptoConfidencialidad = true
+        });
+        Log.Warning("Default admin account created (admin@lostpeople.do). CHANGE PASSWORD immediately in production.");
+
+        context.Usuarios.Add(new Usuario
+        {
+            NombreCompleto = "Verificador Demo",
+            Email = "verificador@lostpeople.do",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Verif123!"),
+            RolId = verifRoleId,
+            Activo = true,
+            Verificado = true,
+            FechaCreacion = DateTime.UtcNow,
+            AceptoTerminos = true,
+            AceptoConfidencialidad = true
+        });
+        Log.Warning("Default verifier account created (verificador@lostpeople.do). CHANGE PASSWORD immediately in production.");
+
+        await context.SaveChangesAsync();
+
+        var adminUserId = context.Usuarios.First(u => u.Email == "admin@lostpeople.do").Id;
+
+        var provinciasList = context.ZonasGeograficas.Where(z => z.Tipo == "Provincia").ToList();
+
+        var personasDemo = new List<PersonaReportada>
+        {
+            new()
             {
-                NombreCompleto = "Administrador",
-                Email = "admin@lostpeople.do",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
-                RolId = 6,
-                Activo = true,
-                Verificado = true,
-                FechaCreacion = DateTime.UtcNow,
-                AceptoTerminos = true,
-                AceptoConfidencialidad = true
-            });
-            Log.Warning("Default admin account created (admin@lostpeople.do). CHANGE PASSWORD immediately in production.");
+                PrimerNombre = "Maria", SegundoNombre = "Elena", PrimerApellido = "Rodriguez", SegundoApellido = "Perez",
+                EdadAproximada = 8, Sexo = "Femenino", EsMenorEdad = true,
+                DescripcionFisica = "Nina de 8 anos, cabello castano largo, ojos marrones",
+                ColorPiel = "Morena clara", ColorOjos = "Marron", ColorCabello = "Castano",
+                Vestimenta = "Uniforme escolar: camisa blanca y falda azul",
+                UltimaUbicacionTexto = "C/ Duarte esq. Palo Hincado, Villa Consuelo, DN",
+                TipoAlerta = "Amber",
+                CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
+                EstadoCasoId = recibidoEstadoId,
+                DatosSinteticos = true,
+                FechaDesaparicion = DateTime.UtcNow.AddDays(-2),
+                FechaCreacion = DateTime.UtcNow.AddDays(-2)
+            },
+            new()
+            {
+                PrimerNombre = "Carlos", PrimerApellido = "Martinez", SegundoApellido = "Lopez",
+                EdadAproximada = 45, Sexo = "Masculino",
+                DescripcionFisica = "Hombre de 45 anos, 1.75m, complexion robusta, barba canosa",
+                EstaturaCm = 175, ColorPiel = "Moreno", ColorOjos = "Marron oscuro", ColorCabello = "Negro con canas",
+                CondicionMedica = "Diabetes tipo 2, requiere insulina",
+                Vestimenta = "Camisa azul de trabajo, pantalon beige, botas negras",
+                UltimaUbicacionTexto = "Av. Abraham Lincoln esq. John F. Kennedy, Santo Domingo",
+                TipoAlerta = "Plata",
+                CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
+                EstadoCasoId = verificacionEstadoId,
+                DatosSinteticos = true,
+                FechaDesaparicion = DateTime.UtcNow.AddDays(-5),
+                FechaCreacion = DateTime.UtcNow.AddDays(-5)
+            },
+            new()
+            {
+                PrimerNombre = "Ana", SegundoNombre = "Patricia", PrimerApellido = "Castillo",
+                EdadAproximada = 22, Sexo = "Femenino",
+                DescripcionFisica = "Mujer joven, 1.60m, contextura delgada, cabello largo negro",
+                EstaturaCm = 160, ColorPiel = "Morena", ColorOjos = "Marron", ColorCabello = "Negro",
+                SenasParticulares = "Lunar en mejilla derecha, aretes de perla",
+                CondicionMedica = "Ansiedad, medicacion controlada",
+                Vestimenta = "Vestido floreado azul y blanco, sandalias",
+                UltimaUbicacionTexto = "Parque Central, Santiago de los Caballeros",
+                TipoAlerta = "Azul",
+                CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
+                EstadoCasoId = recibidoEstadoId,
+                DatosSinteticos = true,
+                FechaDesaparicion = DateTime.UtcNow.AddDays(-1),
+                FechaCreacion = DateTime.UtcNow.AddDays(-1)
+            },
+            new()
+            {
+                PrimerNombre = "Jose", PrimerApellido = "Almonte",
+                EdadAproximada = 67, Sexo = "Masculino",
+                DescripcionFisica = "Adulto mayor, 1.68m, cabello canoso corto, usa lentes",
+                EstaturaCm = 168, ColorPiel = "Moreno claro", ColorOjos = "Gris", ColorCabello = "Canoso",
+                CondicionMedica = "Alzheimer en etapa temprana, desorientacion frecuente",
+                MedicamentosRequeridos = "Donepezilo 10mg diario",
+                Vestimenta = "Guayabera blanca, pantalon beige, zapatos negros",
+                UltimaUbicacionTexto = "Plaza Central, Av. 27 de Febrero, Santo Domingo",
+                TipoAlerta = "Plata",
+                CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
+                EstadoCasoId = coincidenciaEstadoId,
+                DatosSinteticos = true,
+                FechaDesaparicion = DateTime.UtcNow.AddDays(-7),
+                FechaCreacion = DateTime.UtcNow.AddDays(-7)
+            },
+            new()
+            {
+                PrimerNombre = "Luisa", SegundoNombre = "Maria", PrimerApellido = "Fernandez",
+                EdadAproximada = 15, Sexo = "Femenino", EsMenorEdad = true,
+                DescripcionFisica = "Adolescente, 1.55m, cabello castano claro con reflejos, ojos verdes",
+                EstaturaCm = 155, ColorPiel = "Blanca", ColorOjos = "Verdes", ColorCabello = "Castano claro",
+                SenasParticulares = "Piercing en nariz, tatuaje pequeno de estrella en muneca",
+                Vestimenta = "Chamarra de jean, camiseta negra, leggings grises, tenis blancos",
+                UltimaUbicacionTexto = "Megacentro, Av. 27 de Febrero, Santo Domingo",
+                TipoAlerta = "Rosa",
+                CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
+                EstadoCasoId = localizadoEstadoId,
+                DatosSinteticos = true,
+                FechaDesaparicion = DateTime.UtcNow.AddDays(-30),
+                FechaUltimaActualizacion = DateTime.UtcNow.AddDays(-1),
+                FechaCreacion = DateTime.UtcNow.AddDays(-30)
+            },
+            new()
+            {
+                PrimerNombre = "Ramon", PrimerApellido = "Pena",
+                EdadAproximada = 35, Sexo = "Masculino",
+                DescripcionFisica = "Hombre de 35 anos, 1.80m, atletico, cabello rapado, tatuajes ambos brazos",
+                EstaturaCm = 180, ColorPiel = "Moreno oscuro", ColorOjos = "Negros", ColorCabello = "Rapado",
+                SenasParticulares = "Tatuaje de dragon en brazo derecho, cicatriz en menton",
+                Vestimenta = "Franela negra, jeans azules, gorra roja, tenis negros",
+                UltimaUbicacionTexto = "Av. Duarte esq. Paris, Zona Colonial, Santo Domingo",
+                TipoAlerta = "Plata",
+                CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
+                EstadoCasoId = recibidoEstadoId,
+                DatosSinteticos = true,
+                FechaDesaparicion = DateTime.UtcNow.AddDays(-3),
+                FechaCreacion = DateTime.UtcNow.AddDays(-3)
+            },
+            new()
+            {
+                PrimerNombre = "Carmen", SegundoNombre = "Rosa", PrimerApellido = "Jimenez", SegundoApellido = "Diaz",
+                EdadAproximada = 58, Sexo = "Femenino",
+                DescripcionFisica = "Mujer de 58 anos, 1.62m, cabello canoso largo recogido, usa lentes",
+                EstaturaCm = 162, ColorPiel = "Morena", ColorOjos = "Marron", ColorCabello = "Canoso",
+                SenasParticulares = "Usa pañuelo en la cabeza, aretes de cruz",
+                CondicionMedica = "Hipertension controlada con medicacion",
+                Vestimenta = "Vestido de flores, reboso negro, zapatos planos",
+                UltimaUbicacionTexto = "Mercado Modelo, Av. Mella, Zona Colonial, Santo Domingo",
+                TipoAlerta = "Plata",
+                CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
+                EstadoCasoId = verificacionEstadoId,
+                DatosSinteticos = true,
+                FechaDesaparicion = DateTime.UtcNow.AddDays(-10),
+                FechaCreacion = DateTime.UtcNow.AddDays(-10)
+            }
+        };
+
+        for (int i = 0; i < personasDemo.Count; i++)
+        {
+            var p = personasDemo[i];
+            if (provinciasList.Count > 0)
+                p.UltimaUbicacionZonaId = provinciasList[i % provinciasList.Count].Id;
+            p.FechaNacimiento = p.EdadAproximada.HasValue
+                ? DateTime.UtcNow.AddYears(-p.EdadAproximada.Value)
+                : null;
         }
 
-        if (!context.Usuarios.Any(u => u.Email == "verificador@lostpeople.do"))
+        context.PersonasReportadas.AddRange(personasDemo);
+        await context.SaveChangesAsync();
+
+        foreach (var p in personasDemo)
         {
-            context.Usuarios.Add(new Usuario
+            context.Reportes.Add(new Reporte
             {
-                NombreCompleto = "Verificador Demo",
-                Email = "verificador@lostpeople.do",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Verif123!"),
-                RolId = 3,
-                Activo = true,
+                PersonaId = p.Id,
+                ReportanteUsuarioId = adminUserId,
+                RelacionConDesaparecido = "Familiar",
+                TelefonoContacto = "809-555-0101",
+                EmailContacto = "familiar@ejemplo.com",
+                CodigoVerificacion = CodigoGenerator.GenerarCodigoVerificacion(),
                 Verificado = true,
-                FechaCreacion = DateTime.UtcNow,
-                AceptoTerminos = true,
-                AceptoConfidencialidad = true
+                FuenteReporte = "Web",
+                FechaCreacion = p.FechaCreacion
             });
-            Log.Warning("Default verifier account created (verificador@lostpeople.do). CHANGE PASSWORD immediately in production.");
-        }
-
-        if (!context.PersonasReportadas.Any())
-        {
-            var provinciasList = context.ZonasGeograficas.Where(z => z.Tipo == "Provincia").ToList();
-            var rnd = new Random(42);
-
-            var personasDemo = new List<PersonaReportada>
-            {
-                new()
-                {
-                    PrimerNombre = "Maria", SegundoNombre = "Elena", PrimerApellido = "Rodriguez", SegundoApellido = "Perez",
-                    EdadAproximada = 8, Sexo = "Femenino", EsMenorEdad = true,
-                    DescripcionFisica = "Nina de 8 anos, cabello castano largo, ojos marrones",
-                    ColorPiel = "Morena clara", ColorOjos = "Marron", ColorCabello = "Castano",
-                    Vestimenta = "Uniforme escolar: camisa blanca y falda azul",
-                    UltimaUbicacionTexto = "C/ Duarte esq. Palo Hincado, Villa Consuelo, DN",
-                    TipoAlerta = "Amber",
-                    CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
-                    EstadoCasoId = 1,
-                    DatosSinteticos = true,
-                    FechaDesaparicion = DateTime.UtcNow.AddDays(-2),
-                    FechaCreacion = DateTime.UtcNow.AddDays(-2)
-                },
-                new()
-                {
-                    PrimerNombre = "Carlos", PrimerApellido = "Martinez", SegundoApellido = "Lopez",
-                    EdadAproximada = 45, Sexo = "Masculino",
-                    DescripcionFisica = "Hombre de 45 anos, 1.75m, complexion robusta, barba canosa",
-                    EstaturaCm = 175, ColorPiel = "Moreno", ColorOjos = "Marron oscuro", ColorCabello = "Negro con canas",
-                    CondicionMedica = "Diabetes tipo 2, requiere insulina",
-                    Vestimenta = "Camisa azul de trabajo, pantalon beige, botas negras",
-                    UltimaUbicacionTexto = "Av. Abraham Lincoln esq. John F. Kennedy, Santo Domingo",
-                    TipoAlerta = "Plata",
-                    CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
-                    EstadoCasoId = 2,
-                    DatosSinteticos = true,
-                    FechaDesaparicion = DateTime.UtcNow.AddDays(-5),
-                    FechaCreacion = DateTime.UtcNow.AddDays(-5)
-                },
-                new()
-                {
-                    PrimerNombre = "Ana", SegundoNombre = "Patricia", PrimerApellido = "Castillo",
-                    EdadAproximada = 22, Sexo = "Femenino",
-                    DescripcionFisica = "Mujer joven, 1.60m, contextura delgada, cabello largo negro",
-                    EstaturaCm = 160, ColorPiel = "Morena", ColorOjos = "Marron", ColorCabello = "Negro",
-                    SenasParticulares = "Lunar en mejilla derecha, aretes de perla",
-                    CondicionMedica = "Ansiedad, medicacion controlada",
-                    Vestimenta = "Vestido floreado azul y blanco, sandalias",
-                    UltimaUbicacionTexto = "Parque Central, Santiago de los Caballeros",
-                    TipoAlerta = "Azul",
-                    CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
-                    EstadoCasoId = 1,
-                    DatosSinteticos = true,
-                    FechaDesaparicion = DateTime.UtcNow.AddDays(-1),
-                    FechaCreacion = DateTime.UtcNow.AddDays(-1)
-                },
-                new()
-                {
-                    PrimerNombre = "Jose", PrimerApellido = "Almonte",
-                    EdadAproximada = 67, Sexo = "Masculino",
-                    DescripcionFisica = "Adulto mayor, 1.68m, cabello canoso corto, usa lentes",
-                    EstaturaCm = 168, ColorPiel = "Moreno claro", ColorOjos = "Gris", ColorCabello = "Canoso",
-                    CondicionMedica = "Alzheimer en etapa temprana, desorientacion frecuente",
-                    MedicamentosRequeridos = "Donepezilo 10mg diario",
-                    Vestimenta = "Guayabera blanca, pantalon beige, zapatos negros",
-                    UltimaUbicacionTexto = "Plaza Central, Av. 27 de Febrero, Santo Domingo",
-                    TipoAlerta = "Plata",
-                    CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
-                    EstadoCasoId = 3,
-                    DatosSinteticos = true,
-                    FechaDesaparicion = DateTime.UtcNow.AddDays(-7),
-                    FechaCreacion = DateTime.UtcNow.AddDays(-7)
-                },
-                new()
-                {
-                    PrimerNombre = "Luisa", SegundoNombre = "Maria", PrimerApellido = "Fernandez",
-                    EdadAproximada = 15, Sexo = "Femenino", EsMenorEdad = true,
-                    DescripcionFisica = "Adolescente, 1.55m, cabello castano claro con reflejos, ojos verdes",
-                    EstaturaCm = 155, ColorPiel = "Blanca", ColorOjos = "Verdes", ColorCabello = "Castano claro",
-                    SenasParticulares = "Piercing en nariz, tatuaje pequeno de estrella en muneca",
-                    Vestimenta = "Chamarra de jean, camiseta negra, leggings grises, tenis blancos",
-                    UltimaUbicacionTexto = "Megacentro, Av. 27 de Febrero, Santo Domingo",
-                    TipoAlerta = "Rosa",
-                    CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
-                    EstadoCasoId = 5,
-                    DatosSinteticos = true,
-                    FechaDesaparicion = DateTime.UtcNow.AddDays(-30),
-                    FechaUltimaActualizacion = DateTime.UtcNow.AddDays(-1),
-                    FechaCreacion = DateTime.UtcNow.AddDays(-30)
-                },
-                new()
-                {
-                    PrimerNombre = "Ramon", PrimerApellido = "Pena",
-                    EdadAproximada = 35, Sexo = "Masculino",
-                    DescripcionFisica = "Hombre de 35 anos, 1.80m, atletico, cabello rapado, tatuajes ambos brazos",
-                    EstaturaCm = 180, ColorPiel = "Moreno oscuro", ColorOjos = "Negros", ColorCabello = "Rapado",
-                    SenasParticulares = "Tatuaje de dragon en brazo derecho, cicatriz en menton",
-                    Vestimenta = "Franela negra, jeans azules, gorra roja, tenis negros",
-                    UltimaUbicacionTexto = "Av. Duarte esq. Paris, Zona Colonial, Santo Domingo",
-                    TipoAlerta = "Plata",
-                    CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
-                    EstadoCasoId = 1,
-                    DatosSinteticos = true,
-                    FechaDesaparicion = DateTime.UtcNow.AddDays(-3),
-                    FechaCreacion = DateTime.UtcNow.AddDays(-3)
-                },
-                new()
-                {
-                    PrimerNombre = "Carmen", SegundoNombre = "Rosa", PrimerApellido = "Jimenez", SegundoApellido = "Diaz",
-                    EdadAproximada = 58, Sexo = "Femenino",
-                    DescripcionFisica = "Mujer de 58 anos, 1.62m, cabello canoso largo recogido, usa lentes",
-                    EstaturaCm = 162, ColorPiel = "Morena", ColorOjos = "Marron", ColorCabello = "Canoso",
-                    SenasParticulares = "Usa pañuelo en la cabeza, aretes de cruz",
-                    CondicionMedica = "Hipertension controlada con medicacion",
-                    Vestimenta = "Vestido de flores, reboso negro, zapatos planos",
-                    UltimaUbicacionTexto = "Mercado Modelo, Av. Mella, Zona Colonial, Santo Domingo",
-                    TipoAlerta = "Plata",
-                    CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
-                    EstadoCasoId = 2,
-                    DatosSinteticos = true,
-                    FechaDesaparicion = DateTime.UtcNow.AddDays(-10),
-                    FechaCreacion = DateTime.UtcNow.AddDays(-10)
-                }
-            };
-
-            for (int i = 0; i < personasDemo.Count; i++)
-            {
-                var p = personasDemo[i];
-                if (provinciasList.Count > 0)
-                    p.UltimaUbicacionZonaId = provinciasList[i % provinciasList.Count].Id;
-                p.FechaNacimiento = p.EdadAproximada.HasValue
-                    ? DateTime.UtcNow.AddYears(-p.EdadAproximada.Value)
-                    : null;
-            }
-
-            context.PersonasReportadas.AddRange(personasDemo);
-            await context.SaveChangesAsync();
-
-            foreach (var p in personasDemo)
-            {
-                context.Reportes.Add(new Reporte
-                {
-                    PersonaId = p.Id,
-                    ReportanteUsuarioId = 1,
-                    RelacionConDesaparecido = "Familiar",
-                    TelefonoContacto = "809-555-0101",
-                    EmailContacto = "familiar@ejemplo.com",
-                    CodigoVerificacion = CodigoGenerator.GenerarCodigoVerificacion(),
-                    Verificado = true,
-                    FuenteReporte = "Web",
-                    FechaCreacion = p.FechaCreacion
-                });
-            }
         }
 
         await context.SaveChangesAsync();
