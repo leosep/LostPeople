@@ -31,6 +31,8 @@ public static class DependencyInjection
                 connStr,
                 b => b.MigrationsAssembly(typeof(LostPeopleDbContext).Assembly.GetName().Name)));
 
+        services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<LostPeopleDbContext>());
+
         services.AddScoped<Domain.Interfaces.IUnitOfWork, UnitOfWork>();
         services.AddScoped<IAuditService, AuditService>();
         services.AddScoped<INotificationService, NotificationService>();
