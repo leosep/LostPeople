@@ -20,6 +20,7 @@ public class CreateReportCommandHandler : IRequestHandler<CreateReportCommand, i
             throw new InvalidOperationException("Debe aceptar términos y confidencialidad");
 
         var codigo = GenerateCodigoSeguimiento();
+        var estadoRecibido = await _context.EstadosCaso.FirstAsync(e => e.Codigo == "RECIBIDO", ct);
 
         var persona = new PersonaReportada
         {
@@ -46,7 +47,7 @@ public class CreateReportCommandHandler : IRequestHandler<CreateReportCommand, i
             UltimaUbicacionLng = request.UltimaUbicacionLng,
             UltimaUbicacionZonaId = request.UltimaUbicacionZonaId,
             CodigoSeguimiento = codigo,
-            EstadoCasoId = 1,
+            EstadoCasoId = estadoRecibido.Id,
             DatosSinteticos = false,
             FechaCreacion = DateTime.UtcNow
         };
@@ -57,12 +58,13 @@ public class CreateReportCommandHandler : IRequestHandler<CreateReportCommand, i
         var usuarioAnonimo = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == "anonimo@lostpeople.do", ct);
         if (usuarioAnonimo == null)
         {
+            var rolCiudadano = await _context.Roles.FirstAsync(r => r.Nombre == "Ciudadano", ct);
             usuarioAnonimo = new Usuario
             {
                 NombreCompleto = "Anónimo",
                 Email = "anonimo@lostpeople.do",
                 PasswordHash = Guid.NewGuid().ToString(),
-                RolId = 1,
+                RolId = rolCiudadano.Id,
                 Activo = true,
                 FechaCreacion = DateTime.UtcNow,
                 AceptoTerminos = request.AceptoTerminos,

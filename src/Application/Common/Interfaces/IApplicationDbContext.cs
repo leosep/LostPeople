@@ -11,6 +11,8 @@ public interface IApplicationDbContext
     DbSet<Reporte> Reportes { get; }
     DbSet<FuenteDatos> FuentesDatos { get; }
     DbSet<Usuario> Usuarios { get; }
+    DbSet<EstadoCaso> EstadosCaso { get; }
+    DbSet<Rol> Roles { get; }
     DbSet<Verificacion> Verificaciones { get; }
     DbSet<Archivo> Archivos { get; }
     DbSet<ZonaGeografica> ZonasGeograficas { get; }

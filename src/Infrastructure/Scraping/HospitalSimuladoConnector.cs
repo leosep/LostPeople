@@ -61,6 +61,7 @@ public class HospitalSimuladoConnector : IDataSourceConnector
             .Where(z => z.Tipo == "Provincia")
             .ToListAsync(ct);
 
+        var recibidoId = (await _context.EstadosCaso.FirstAsync(e => e.Codigo == "RECIBIDO", ct)).Id;
         var personas = new List<PersonaReportada>();
         for (int i = 0; i < 15; i++)
         {
@@ -89,7 +90,7 @@ public class HospitalSimuladoConnector : IDataSourceConnector
                 SenasParticulares = senas,
                 CodigoSeguimiento = Guid.NewGuid().ToString("N")[..10].ToUpper(),
                 DatosSinteticos = true,
-                EstadoCasoId = 1,
+                EstadoCasoId = recibidoId,
                 FechaCreacion = DateTime.UtcNow
             };
             personas.Add(persona);

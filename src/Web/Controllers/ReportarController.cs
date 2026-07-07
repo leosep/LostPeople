@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 namespace LostPeople.Web.Controllers;
 
 [EnableRateLimiting("Public")]
+[Route("[controller]/{action=Index}")]
 public class ReportarController : Controller
 {
     private readonly LostPeopleDbContext _context;
@@ -75,7 +76,7 @@ public class ReportarController : Controller
             UltimaUbicacionLng = model.UltimaUbicacionLng,
             UltimaUbicacionZonaId = model.UltimaUbicacionZonaId,
             CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
-            EstadoCasoId = 1,
+            EstadoCasoId = (await _context.EstadosCaso.FirstAsync(e => e.Codigo == "RECIBIDO")).Id,
             DatosSinteticos = false,
             FechaCreacion = DateTime.UtcNow
         };
@@ -91,7 +92,7 @@ public class ReportarController : Controller
                 NombreCompleto = "Anónimo",
                 Email = "anonimo@lostpeople.do",
                 PasswordHash = Guid.NewGuid().ToString(),
-                RolId = 1,
+                RolId = (await _context.Roles.FirstAsync(r => r.Nombre == "Ciudadano")).Id,
                 Activo = true,
                 FechaCreacion = DateTime.UtcNow,
                 AceptoTerminos = model.AceptoTerminos,
@@ -237,7 +238,8 @@ public class ReportarController : Controller
             return View(model);
         }
 
-        persona.EstadoCasoId = model.EstaSalvo ? 5 : 6;
+        var codigoEstado = model.EstaSalvo ? "LOCALIZADO_VIVO" : "LOCALIZADO_FALLECIDO";
+        persona.EstadoCasoId = (await _context.EstadosCaso.FirstAsync(e => e.Codigo == codigoEstado)).Id;
         persona.FechaUltimaActualizacion = DateTime.UtcNow;
 
         var anonUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == "anonimo@lostpeople.do");
@@ -285,7 +287,7 @@ public class ReportarController : Controller
         return RedirectToAction("Estado", new { codigo });
     }
 
-    [HttpGet]
+    [HttpGet("{codigo?}")]
     public async Task<IActionResult> Estado(string codigo)
     {
         var persona = await _context.PersonasReportadas

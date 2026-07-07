@@ -46,7 +46,8 @@ public class ReviewCoincidenciaCommandHandler : IRequestHandler<ReviewCoincidenc
 
         if (request.Resultado == "Confirmado")
         {
-            coincidencia.PersonaReportada.EstadoCasoId = 3;
+            var estadoCoincidencia = await _context.EstadosCaso.FirstAsync(e => e.Codigo == "COINCIDENCIA", ct);
+            coincidencia.PersonaReportada.EstadoCasoId = estadoCoincidencia.Id;
             coincidencia.PersonaReportada.FechaUltimaActualizacion = DateTime.UtcNow;
         }
 
