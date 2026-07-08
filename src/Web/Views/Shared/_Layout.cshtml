@@ -51,6 +51,10 @@
                     @if (User.Identity?.IsAuthenticated == true)
                     {
                         <span class="text-sm">@User.Identity.Name</span>
+                        if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                        {
+                            <a href="/Admin" class="hover:text-secondary-light transition font-semibold">Admin</a>
+                        }
                         <form method="post" action="/Account/Logout" class="inline">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="hover:text-secondary-light transition text-sm">Cerrar sesión</button>
@@ -74,7 +78,18 @@
                 <a href="/Reportar/Localizada" class="block px-3 py-2 rounded hover:bg-primary-light">¿Está a salvo?</a>
                 <a href="/Reportar/Seguimiento" class="block px-3 py-2 rounded hover:bg-primary-light">Seguimiento</a>
                 <a href="/Home/Sobre" class="block px-3 py-2 rounded hover:bg-primary-light">Sobre</a>
-                @if (User.Identity?.IsAuthenticated != true)
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                    {
+                        <a href="/Admin" class="block px-3 py-2 rounded hover:bg-primary-light">Admin</a>
+                    }
+                    <form method="post" action="/Account/Logout" class="px-3 py-2">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="hover:text-secondary-light text-sm">Cerrar sesión</button>
+                    </form>
+                }
+                else
                 {
                     <a href="/Account/Login" class="block px-3 py-2 rounded hover:bg-primary-light">Iniciar sesión</a>
                 }
@@ -117,6 +132,10 @@
                     <ul class="space-y-2 text-sm">
                         @if (User.Identity?.IsAuthenticated == true)
                         {
+                            if (User.IsInRole("Admin") || User.IsInRole("SuperAdmin"))
+                            {
+                                <li><a href="/Admin" class="hover:text-secondary-light">Panel Admin</a></li>
+                            }
                             <li><a href="/Account/Logout" class="hover:text-secondary-light">Cerrar sesión</a></li>
                         }
                         else
