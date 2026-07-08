@@ -13,6 +13,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 var localConfigFile = Path.Combine(AppContext.BaseDirectory, "appsettings.Local.json");
 builder.Configuration.AddJsonFile(localConfigFile, optional: true);
+builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true);
 
 var logConfig = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
