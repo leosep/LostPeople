@@ -83,13 +83,15 @@ public class AccountController : Controller
             return View(model);
         }
 
+        var rolCiudadano = await _context.Roles.FirstAsync(r => r.Nombre == "Ciudadano");
+
         var usuario = new Domain.Entities.Usuario
         {
             NombreCompleto = model.NombreCompleto,
             Email = model.Email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
             Telefono = model.Telefono,
-            RolId = 1,
+            RolId = rolCiudadano.Id,
             Activo = true,
             Verificado = false,
             FechaCreacion = DateTime.UtcNow,
