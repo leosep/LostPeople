@@ -51,6 +51,17 @@ public class ReportarController : Controller
             return View(model);
         }
 
+        var codigoSeguimiento = await GenerarCodigoSeguimientoUnicoAsync();
+        if (codigoSeguimiento == null)
+        {
+            ModelState.AddModelError("", "Error al generar el código de seguimiento. Intenta de nuevo.");
+            ViewBag.Provincias = await _context.ZonasGeograficas
+                .Where(z => z.Tipo == "Provincia")
+                .OrderBy(z => z.Nombre)
+                .ToListAsync();
+            return View(model);
+        }
+
         var persona = new PersonaReportada
         {
             PrimerNombre = model.PrimerNombre,
@@ -59,7 +70,7 @@ public class ReportarController : Controller
             SegundoApellido = model.SegundoApellido,
             Alias = model.Alias,
             FechaNacimiento = model.FechaNacimiento,
-            FechaDesaparicion = model.FechaDesaparicion ?? DateTime.UtcNow,
+            FechaDesaparicion = model.FechaDesaparicion!.Value,
             EdadAproximada = model.EdadAproximada,
             Sexo = model.Sexo,
             DescripcionFisica = model.DescripcionFisica,
@@ -75,7 +86,7 @@ public class ReportarController : Controller
             UltimaUbicacionLat = model.UltimaUbicacionLat,
             UltimaUbicacionLng = model.UltimaUbicacionLng,
             UltimaUbicacionZonaId = model.UltimaUbicacionZonaId,
-            CodigoSeguimiento = CodigoGenerator.GenerarCodigoSeguimiento(),
+            CodigoSeguimiento = codigoSeguimiento,
             EstadoCasoId = (await _context.EstadosCaso.FirstAsync(e => e.Codigo == "RECIBIDO")).Id,
             DatosSinteticos = false,
             FechaCreacion = DateTime.UtcNow
@@ -173,13 +184,15 @@ public class ReportarController : Controller
         TempData["CodigoSeguimiento"] = persona.CodigoSeguimiento;
         TempData["PersonaNombre"] = $"{persona.PrimerNombre} {persona.PrimerApellido}";
 
+        var verifyUrl = Url.Action("Verificar", "Reportar", new { codigo = persona.CodigoSeguimiento }, Request.Scheme);
+
         if (!string.IsNullOrEmpty(reporte.TelefonoContacto))
         {
             var smsService = HttpContext.RequestServices.GetRequiredService<INotificationService>();
             await smsService.SendSmsAsync(reporte.TelefonoContacto,
                 $"LostPeople RD: Tu código de verificación es {reporte.CodigoVerificacion}. " +
                 $"Código de seguimiento: {persona.CodigoSeguimiento}. " +
-                $"Guarda este código para dar seguimiento a tu caso.");
+                $"Verifica tu reporte en: {verifyUrl}");
         }
         if (!string.IsNullOrEmpty(reporte.EmailContacto))
         {
@@ -189,6 +202,7 @@ public class ReportarController : Controller
                 $"<h2>Reporte recibido</h2><p>Hola,</p><p>Hemos recibido tu reporte de desaparición de <strong>{persona.PrimerNombre} {persona.PrimerApellido}</strong>.</p>" +
                 $"<p><strong>Código de seguimiento:</strong> {persona.CodigoSeguimiento}</p>" +
                 $"<p><strong>Código de verificación:</strong> {reporte.CodigoVerificacion}</p>" +
+                $"<p><a href='{verifyUrl}'>Haz clic aquí para verificar tu reporte</a></p>" +
                 $"<p>Guarda estos códigos. Los necesitarás para dar seguimiento a tu caso.</p>" +
                 $"<hr><p style='color:#666;font-size:12px;'>LostPeople RD - Plataforma complementaria. No sustituye al 911.</p>");
         }
@@ -227,9 +241,23 @@ public class ReportarController : Controller
         else if (!string.IsNullOrEmpty(model.NombrePersona))
         {
             var term = model.NombrePersona.ToLower().Trim();
-            persona = await _context.PersonasReportadas
+            var posibles = await _context.PersonasReportadas
                 .Where(p => p.PrimerNombre.ToLower().Contains(term) || p.PrimerApellido.ToLower().Contains(term))
-                .FirstOrDefaultAsync();
+                .ToListAsync();
+
+            if (posibles.Count == 0)
+            {
+                ModelState.AddModelError("", "No se encontró la persona. Verifica los datos.");
+                return View(model);
+            }
+
+            if (posibles.Count > 1)
+            {
+                ModelState.AddModelError("", "Se encontraron varias personas con ese nombre. Por favor usa el código de seguimiento para identificar el caso exacto.");
+                return View(model);
+            }
+
+            persona = posibles[0];
         }
 
         if (persona == null)
@@ -238,8 +266,7 @@ public class ReportarController : Controller
             return View(model);
         }
 
-        var codigoEstado = model.EstaSalvo ? "LOCALIZADO_VIVO" : "LOCALIZADO_FALLECIDO";
-        persona.EstadoCasoId = (await _context.EstadosCaso.FirstAsync(e => e.Codigo == codigoEstado)).Id;
+        persona.EstadoCasoId = (await _context.EstadosCaso.FirstAsync(e => e.Codigo == "VERIFICACION")).Id;
         persona.FechaUltimaActualizacion = DateTime.UtcNow;
 
         var anonUser = await _context.Usuarios.FirstOrDefaultAsync(u => u.Email == "anonimo@lostpeople.do");
@@ -249,6 +276,7 @@ public class ReportarController : Controller
             ReportanteUsuarioId = anonUser?.Id ?? 1,
             EsReporteLocalizacion = true,
             DetalleLocalizacion = model.LugarLocalizacion,
+            Notas = model.EstaSalvo ? "PROPUESTO_VIVO" : "PROPUESTO_FALLECIDO",
             FechaCreacion = DateTime.UtcNow
         };
         _context.Reportes.Add(reporteCierre);
@@ -297,5 +325,58 @@ public class ReportarController : Controller
 
         if (persona == null) return NotFound();
         return View(persona);
+    }
+
+    [HttpGet]
+    public IActionResult Verificar(string? codigo)
+    {
+        ViewBag.CodigoSeguimiento = codigo;
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Verificar(string codigoSeguimiento, string codigoVerificacion)
+    {
+        if (string.IsNullOrEmpty(codigoSeguimiento) || string.IsNullOrEmpty(codigoVerificacion))
+        {
+            ModelState.AddModelError("", "Debes ingresar el código de seguimiento y el código de verificación.");
+            return View();
+        }
+
+        var reporte = await _context.Reportes
+            .Include(r => r.Persona)
+            .FirstOrDefaultAsync(r => r.Persona.CodigoSeguimiento == codigoSeguimiento && r.CodigoVerificacion == codigoVerificacion);
+
+        if (reporte == null)
+        {
+            ModelState.AddModelError("", "Códigos inválidos. Verifica los datos e intenta de nuevo.");
+            return View();
+        }
+
+        if (reporte.Verificado)
+        {
+            TempData["Mensaje"] = "Tu reporte ya estaba verificado.";
+            return RedirectToAction("Estado", new { codigo = codigoSeguimiento });
+        }
+
+        reporte.Verificado = true;
+        await _context.SaveChangesAsync();
+
+        TempData["Mensaje"] = "¡Gracias! Tu reporte ha sido verificado correctamente.";
+        return RedirectToAction("Estado", new { codigo = codigoSeguimiento });
+    }
+
+    private async Task<string?> GenerarCodigoSeguimientoUnicoAsync()
+    {
+        const int maxIntentos = 5;
+        for (int i = 0; i < maxIntentos; i++)
+        {
+            var codigo = CodigoGenerator.GenerarCodigoSeguimiento();
+            var existe = await _context.PersonasReportadas.AnyAsync(p => p.CodigoSeguimiento == codigo);
+            if (!existe)
+                return codigo;
+        }
+        return null;
     }
 }

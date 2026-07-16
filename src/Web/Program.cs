@@ -77,13 +77,16 @@ builder.Services.AddCors(options =>
 builder.Services.AddHealthChecks();
 
 var forwardingScheme = Environment.GetEnvironmentVariable("FORWARDED_SCHEME");
+var forwardingProxyIp = Environment.GetEnvironmentVariable("FORWARDED_PROXY_IP");
 if (!string.IsNullOrEmpty(forwardingScheme))
 {
     builder.Services.Configure<ForwardedHeadersOptions>(options =>
     {
         options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
-        options.KnownNetworks.Clear();
-        options.KnownProxies.Clear();
+        if (!string.IsNullOrEmpty(forwardingProxyIp))
+        {
+            options.KnownProxies.Add(System.Net.IPAddress.Parse(forwardingProxyIp));
+        }
     });
 }
 
@@ -97,7 +100,10 @@ try
     using var scope = app.Services.CreateScope();
     var db = scope.ServiceProvider.GetRequiredService<LostPeopleDbContext>();
     var connStr = db.Database.GetConnectionString();
-    Log.Information("Attempting database migration with connection string: {ConnStr}", connStr?.Replace("Password=", "Password=***"));
+    var connStrRedacted = connStr != null
+        ? System.Text.RegularExpressions.Regex.Replace(connStr, @"(Password|Pwd)\s*=\s*[^;]*", "$1=***", System.Text.RegularExpressions.RegexOptions.IgnoreCase)
+        : null;
+    Log.Information("Attempting database migration with connection string: {ConnStr}", connStrRedacted);
 
     await db.Database.MigrateAsync();
 

@@ -24,6 +24,7 @@ public class ReportarViewModel
     [DataType(DataType.Date)]
     public DateTime? FechaNacimiento { get; set; }
 
+    [Required(ErrorMessage = "La fecha de desaparición es obligatoria")]
     [DataType(DataType.Date)]
     public DateTime? FechaDesaparicion { get; set; }
 

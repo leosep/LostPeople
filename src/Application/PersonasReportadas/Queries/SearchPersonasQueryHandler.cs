@@ -67,7 +67,6 @@ public class SearchPersonasQueryHandler : IRequestHandler<SearchPersonasQuery, S
                 Sexo = p.Sexo,
                 UltimaUbicacionTexto = p.UltimaUbicacionTexto,
                 TipoAlerta = p.TipoAlerta,
-                CodigoSeguimiento = p.CodigoSeguimiento,
                 EstadoCasoNombre = p.EstadoCaso!.Nombre,
                 EstadoCasoColor = p.EstadoCaso.ColorHex,
                 FotoThumbnailUrl = p.FotoThumbnailUrl,

@@ -38,11 +38,11 @@ public class ScrapingSchedulerJob : IJob
                 if (fuente != null)
                 {
                     fuente.TotalEjecuciones++;
-                    fuente.UltimaEjecucionOk = result.Success ? DateTime.UtcNow : null;
                     fuente.TotalRegistrosObtenidos += result.RecordsInserted;
 
                     if (result.Success)
                     {
+                        fuente.UltimaEjecucionOk = DateTime.UtcNow;
                         fuente.FallosConsecutivos = 0;
                         fuente.EstadoSalud = "Activa";
                     }

@@ -94,6 +94,10 @@ public class Emergencias911Connector : IDataSourceConnector
                     continue;
                 }
 
+                DateTime? fechaRegistro = null;
+                if (!string.IsNullOrEmpty(fechaStr) && DateTime.TryParse(fechaStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var parsedFecha))
+                    fechaRegistro = parsedFecha;
+
                 nuevosRegistros.Add(new RegistroIngerido
                 {
                     FuenteId = fuente.Id,
@@ -104,6 +108,7 @@ public class Emergencias911Connector : IDataSourceConnector
                     TelefonoContacto = telefono,
                     InstitucionOrigen = "Sistema 9-1-1",
                     UrlOrigen = urlBase,
+                    FechaRegistroFuente = fechaRegistro,
                     FechaIngesta = DateTime.UtcNow,
                     HashContenido = hash,
                     CoincidenciaProcesada = false

@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+using System.Text;
 using LostPeople.Application.Common.Interfaces;
 using LostPeople.Domain.Entities;
 using LostPeople.Infrastructure.Persistence;
@@ -54,15 +56,22 @@ public class HospitalSimuladoConnector : IDataSourceConnector
     public async Task<IngestionResult> FetchAsync(CancellationToken ct = default)
     {
         var startTime = DateTime.UtcNow;
-        var rand = new Random(DateTime.UtcNow.Millisecond);
+        var rand = new Random();
         var result = new IngestionResult();
+
+        var fuente = await _context.FuentesDatos.FirstOrDefaultAsync(f => f.Codigo == SourceCode, ct);
+        if (fuente == null || !fuente.Activo)
+        {
+            result.Errors.Add(new IngestionError { Type = "CONFIG", Message = $"FuenteDatos '{SourceCode}' no encontrada o inactiva", IsFatal = false });
+            result.Duration = DateTime.UtcNow - startTime;
+            return result;
+        }
 
         var provinciasDb = await _context.ZonasGeograficas
             .Where(z => z.Tipo == "Provincia")
             .ToListAsync(ct);
 
-        var recibidoId = (await _context.EstadosCaso.FirstAsync(e => e.Codigo == "RECIBIDO", ct)).Id;
-        var personas = new List<PersonaReportada>();
+        var nuevosRegistros = new List<RegistroIngerido>();
         for (int i = 0; i < 15; i++)
         {
             var esHombre = rand.Next(2) == 0;
@@ -78,24 +87,33 @@ public class HospitalSimuladoConnector : IDataSourceConnector
             var vestimenta = Vestimentas[rand.Next(Vestimentas.Length)];
             var senas = SenasParticulares[rand.Next(SenasParticulares.Length)];
 
-            var persona = new PersonaReportada
+            var descripcion = $"Paciente NN ingresado en {hospital}. Vestimenta: {vestimenta}. Senas: {senas}.";
+            var contentToHash = $"{hospital}|{nombre}|{apellido1}|{edad}|{descripcion}";
+            var hash = ComputeHash(contentToHash);
+
+            var existe = await _context.RegistrosIngeridos.AnyAsync(r => r.HashContenido == hash && r.FuenteId == fuente.Id, ct);
+            if (existe)
             {
+                result.RecordsDuplicated++;
+                continue;
+            }
+
+            nuevosRegistros.Add(new RegistroIngerido
+            {
+                FuenteId = fuente.Id,
                 PrimerNombre = nombre,
                 PrimerApellido = apellido1,
                 SegundoApellido = apellido2,
-                EdadAproximada = edad,
                 Sexo = esHombre ? "M" : "F",
-                UltimaUbicacionTexto = provincia,
-                Vestimenta = vestimenta,
-                SenasParticulares = senas,
-                CodigoSeguimiento = Guid.NewGuid().ToString("N")[..10].ToUpper(),
-                DatosSinteticos = true,
-                EstadoCasoId = recibidoId,
-                FechaCreacion = DateTime.UtcNow
-            };
-            personas.Add(persona);
+                EdadAproximada = edad,
+                DescripcionFisica = descripcion?.Length > 2000 ? descripcion[..2000] : descripcion,
+                UbicacionTexto = provincia,
+                InstitucionOrigen = hospital,
+                FechaIngesta = DateTime.UtcNow,
+                HashContenido = hash,
+                CoincidenciaProcesada = false
+            });
 
-            result.RecordsInserted++;
             result.RecordsExtracted++;
 
             _logger.LogDebug(
@@ -103,13 +121,23 @@ public class HospitalSimuladoConnector : IDataSourceConnector
                 nombre, $"{apellido1} {apellido2}", edad, provincia, hospital);
         }
 
-        _context.PersonasReportadas.AddRange(personas);
-        await _context.SaveChangesAsync(ct);
+        if (nuevosRegistros.Count > 0)
+        {
+            _context.RegistrosIngeridos.AddRange(nuevosRegistros);
+            await _context.SaveChangesAsync(ct);
+        }
 
+        result.RecordsInserted = nuevosRegistros.Count;
         result.Success = true;
         result.Duration = DateTime.UtcNow - startTime;
-        _logger.LogInformation("HospitalSimulado: {Count} pacientes NN simulados generados", result.RecordsInserted);
+        _logger.LogInformation("HospitalSimulado: {Count} registros de pacientes NN simulados insertados", result.RecordsInserted);
 
         return result;
+    }
+
+    private static string ComputeHash(string input)
+    {
+        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(input));
+        return Convert.ToHexString(bytes).ToLowerInvariant();
     }
 }

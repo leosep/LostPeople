@@ -113,6 +113,10 @@ public class SnsHospitalarioConnector : IDataSourceConnector
                         continue;
                     }
 
+                    DateTime? fechaRegistro = null;
+                    if (!string.IsNullOrEmpty(fechaIngresoStr) && DateTime.TryParse(fechaIngresoStr, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var parsedFecha))
+                        fechaRegistro = parsedFecha;
+
                     nuevosRegistros.Add(new RegistroIngerido
                     {
                         FuenteId = fuente.Id,
@@ -124,6 +128,7 @@ public class SnsHospitalarioConnector : IDataSourceConnector
                         InstitucionOrigen = centro.Nombre,
                         UrlOrigen = url,
                         EstadoPaciente = estado,
+                        FechaRegistroFuente = fechaRegistro,
                         FechaIngesta = DateTime.UtcNow,
                         HashContenido = hash,
                         CoincidenciaProcesada = false

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using LostPeople.Domain.Entities;
 using LostPeople.Infrastructure.Services;
 using Serilog;
@@ -187,11 +188,12 @@ public static class DbInitializer
         var coincidenciaEstadoId = context.EstadosCaso.First(e => e.Codigo == "COINCIDENCIA").Id;
         var localizadoEstadoId = context.EstadosCaso.First(e => e.Codigo == "LOCALIZADO_VIVO").Id;
 
+        var adminPassword = Environment.GetEnvironmentVariable("LOSTPEOPLE_ADMIN_INITIAL_PASSWORD") ?? GenerarPasswordAleatorio();
         context.Usuarios.Add(new Usuario
         {
             NombreCompleto = "Administrador",
             Email = "admin@lostpeople.do",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
             RolId = adminRoleId,
             Activo = true,
             Verificado = true,
@@ -199,13 +201,17 @@ public static class DbInitializer
             AceptoTerminos = true,
             AceptoConfidencialidad = true
         });
-        Log.Warning("Default admin account created (admin@lostpeople.do). CHANGE PASSWORD immediately in production.");
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LOSTPEOPLE_ADMIN_INITIAL_PASSWORD")))
+            Log.Warning("Admin account created with random password: {Password}. CHANGE IT IMMEDIATELY in production.", adminPassword);
+        else
+            Log.Warning("Admin account created (admin@lostpeople.do) using LOSTPEOPLE_ADMIN_INITIAL_PASSWORD. CHANGE IT IMMEDIATELY in production.");
 
+        var verifierPassword = Environment.GetEnvironmentVariable("LOSTPEOPLE_VERIFIER_INITIAL_PASSWORD") ?? GenerarPasswordAleatorio();
         context.Usuarios.Add(new Usuario
         {
             NombreCompleto = "Verificador Demo",
             Email = "verificador@lostpeople.do",
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword("Verif123!"),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(verifierPassword),
             RolId = verifRoleId,
             Activo = true,
             Verificado = true,
@@ -213,7 +219,10 @@ public static class DbInitializer
             AceptoTerminos = true,
             AceptoConfidencialidad = true
         });
-        Log.Warning("Default verifier account created (verificador@lostpeople.do). CHANGE PASSWORD immediately in production.");
+        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("LOSTPEOPLE_VERIFIER_INITIAL_PASSWORD")))
+            Log.Warning("Verifier account created with random password: {Password}. CHANGE IT IMMEDIATELY in production.", verifierPassword);
+        else
+            Log.Warning("Verifier account created (verificador@lostpeople.do) using LOSTPEOPLE_VERIFIER_INITIAL_PASSWORD. CHANGE IT IMMEDIATELY in production.");
 
         await context.SaveChangesAsync();
 
@@ -370,5 +379,15 @@ public static class DbInitializer
         }
 
         await context.SaveChangesAsync();
+    }
+
+    private static string GenerarPasswordAleatorio()
+    {
+        const string chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%&*";
+        var password = new char[16];
+        var data = RandomNumberGenerator.GetBytes(16);
+        for (int i = 0; i < 16; i++)
+            password[i] = chars[data[i] % chars.Length];
+        return new string(password);
     }
 }

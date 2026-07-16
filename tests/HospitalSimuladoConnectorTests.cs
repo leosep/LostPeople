@@ -63,6 +63,13 @@ public class HospitalSimuladoConnectorTests
     [Fact]
     public async Task FetchAsync_ReturnsSuccessResult()
     {
+        _context.FuentesDatos.Add(new Domain.Entities.FuenteDatos
+        {
+            Codigo = "HOSPITAL_SIMULADO",
+            Nombre = "Hospitales RD - Simulación de pacientes NN",
+            Tipo = "SIMULADO",
+            Activo = true
+        });
         _context.ZonasGeograficas.Add(new Domain.Entities.ZonaGeografica
         {
             Id = 1,
@@ -80,5 +87,9 @@ public class HospitalSimuladoConnectorTests
         result.RecordsExtracted.Should().Be(15);
         result.RecordsInserted.Should().Be(15);
         result.Duration.Should().BeGreaterThan(TimeSpan.Zero);
+
+        // Verify registros were inserted into RegistrosIngeridos, not PersonasReportadas
+        _context.RegistrosIngeridos.Count().Should().Be(15);
+        _context.PersonasReportadas.Count().Should().Be(0);
     }
 }

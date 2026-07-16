@@ -8,10 +8,12 @@ namespace LostPeople.Infrastructure.Matching;
 public class FuzzyMatchingService : IMatchingService
 {
     private readonly LostPeopleDbContext _context;
+    private readonly INotificationService _notificationService;
 
-    public FuzzyMatchingService(LostPeopleDbContext context)
+    public FuzzyMatchingService(LostPeopleDbContext context, INotificationService notificationService)
     {
         _context = context;
+        _notificationService = notificationService;
     }
 
     public async Task<MatchResult> CalculateMatchAsync(int personaId, int registroId, CancellationToken ct = default)
@@ -98,7 +100,7 @@ public class FuzzyMatchingService : IMatchingService
             .ToListAsync(ct);
 
         var personasActivas = await _context.PersonasReportadas
-            .Where(p => p.EstadoCasoId <= 4)
+            .Where(p => p.EstadoCasoId <= 4 && !p.DatosSinteticos)
             .ToListAsync(ct);
 
         foreach (var registro in registrosSinProcesar)
@@ -123,6 +125,29 @@ public class FuzzyMatchingService : IMatchingService
                         FechaDeteccion = DateTime.UtcNow
                     };
                     _context.Coincidencias.Add(coincidencia);
+
+                    var reportes = await _context.Reportes
+                        .Where(r => r.PersonaId == persona.Id)
+                        .ToListAsync(ct);
+                    var usuarioIds = reportes.Select(r => r.ReportanteUsuarioId).Distinct();
+                    foreach (var uid in usuarioIds)
+                    {
+                        await _notificationService.NotifyMatchFoundAsync(uid, persona.Id, match.ScoreGeneral, ct);
+                    }
+                    foreach (var rpt in reportes)
+                    {
+                        var usuario = await _context.Usuarios.FindAsync(new object[] { rpt.ReportanteUsuarioId }, ct);
+                        if (usuario != null && usuario.Email == "anonimo@lostpeople.do")
+                        {
+                            if (!string.IsNullOrEmpty(rpt.TelefonoContacto))
+                                await _notificationService.SendSmsAsync(rpt.TelefonoContacto,
+                                    $"LostPeople RD: Se ha detectado una posible coincidencia para {persona.PrimerNombre} {persona.PrimerApellido}. Revisa el estado en lostpeople.do/Reportar/Seguimiento.", ct);
+                            if (!string.IsNullOrEmpty(rpt.EmailContacto))
+                                await _notificationService.SendEmailAsync(rpt.EmailContacto,
+                                    "LostPeople RD - Posible coincidencia encontrada",
+                                    $"<h2>Posible coincidencia</h2><p>Se ha detectado una posible coincidencia para <strong>{persona.PrimerNombre} {persona.PrimerApellido}</strong>.</p><p>Revisa el estado del caso usando tu código de seguimiento en nuestra plataforma.</p>", ct);
+                        }
+                    }
                 }
             }
             registro.CoincidenciaProcesada = true;

@@ -26,6 +26,7 @@ public class HomeController : Controller
         var alertasActivas = await _context.PersonasReportadas
             .Where(p => p.EstadoCasoId <= 4 && !string.IsNullOrEmpty(p.TipoAlerta) && !p.DatosSinteticos)
             .Include(p => p.UltimaUbicacionZona)
+            .OrderByDescending(p => p.FechaDesaparicion)
             .Take(5)
             .ToListAsync();
 

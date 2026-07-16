@@ -8,10 +8,12 @@ namespace LostPeople.Application.Coincidencias.Commands;
 public class ReviewCoincidenciaCommandHandler : IRequestHandler<ReviewCoincidenciaCommand, bool>
 {
     private readonly IApplicationDbContext _context;
+    private readonly INotificationService _notificationService;
 
-    public ReviewCoincidenciaCommandHandler(IApplicationDbContext context)
+    public ReviewCoincidenciaCommandHandler(IApplicationDbContext context, INotificationService notificationService)
     {
         _context = context;
+        _notificationService = notificationService;
     }
 
     public async Task<bool> Handle(ReviewCoincidenciaCommand request, CancellationToken ct)
@@ -49,6 +51,15 @@ public class ReviewCoincidenciaCommandHandler : IRequestHandler<ReviewCoincidenc
             var estadoCoincidencia = await _context.EstadosCaso.FirstAsync(e => e.Codigo == "COINCIDENCIA", ct);
             coincidencia.PersonaReportada.EstadoCasoId = estadoCoincidencia.Id;
             coincidencia.PersonaReportada.FechaUltimaActualizacion = DateTime.UtcNow;
+
+            var reportes = await _context.Reportes
+                .Where(r => r.PersonaId == coincidencia.PersonaReportada.Id)
+                .ToListAsync(ct);
+            var usuarioIds = reportes.Select(r => r.ReportanteUsuarioId).Distinct();
+            foreach (var uid in usuarioIds)
+            {
+                await _notificationService.NotifyCaseClosedAsync(uid, coincidencia.PersonaReportada.Id, "COINCIDENCIA", ct);
+            }
         }
 
         await _context.SaveChangesAsync(ct);

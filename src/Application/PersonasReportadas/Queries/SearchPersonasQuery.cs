@@ -38,7 +38,6 @@ public class PersonaReportadaItem
     public string? Sexo { get; set; }
     public string? UltimaUbicacionTexto { get; set; }
     public string? TipoAlerta { get; set; }
-    public string CodigoSeguimiento { get; set; } = string.Empty;
     public string? EstadoCasoNombre { get; set; }
     public string? EstadoCasoColor { get; set; }
     public string? FotoThumbnailUrl { get; set; }

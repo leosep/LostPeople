@@ -80,7 +80,7 @@ public class BuscarController : Controller
             .Include(p => p.EstadoCaso)
             .Include(p => p.UltimaUbicacionZona)
             .Include(p => p.Reportes)
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .FirstOrDefaultAsync(p => p.Id == id && !p.DatosSinteticos);
 
         if (persona == null) return NotFound();
 

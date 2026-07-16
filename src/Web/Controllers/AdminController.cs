@@ -24,9 +24,9 @@ public class AdminController : Controller
 
     public async Task<IActionResult> Index()
     {
-        ViewBag.TotalPersonas = await _context.PersonasReportadas.CountAsync();
-        ViewBag.TotalActivos = await _context.PersonasReportadas.CountAsync(p => p.EstadoCasoId <= 4);
-        ViewBag.TotalLocalizados = await _context.PersonasReportadas.CountAsync(p => p.EstadoCasoId >= 5);
+        ViewBag.TotalPersonas = await _context.PersonasReportadas.CountAsync(p => !p.DatosSinteticos);
+        ViewBag.TotalActivos = await _context.PersonasReportadas.CountAsync(p => p.EstadoCasoId <= 4 && !p.DatosSinteticos);
+        ViewBag.TotalLocalizados = await _context.PersonasReportadas.CountAsync(p => p.EstadoCasoId >= 5 && !p.DatosSinteticos);
         ViewBag.TotalFuentes = await _context.FuentesDatos.CountAsync();
         ViewBag.TotalUsuarios = await _context.Usuarios.CountAsync();
         ViewBag.TotalCoincidencias = await _context.Coincidencias.CountAsync();
@@ -94,5 +94,25 @@ public class AdminController : Controller
 
         TempData["Mensaje"] = "Coincidencia actualizada correctamente.";
         return RedirectToAction("Coincidencias");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfirmarLocalizacion(int reporteId)
+    {
+        var reporte = await _context.Reportes
+            .Include(r => r.Persona)
+            .FirstOrDefaultAsync(r => r.Id == reporteId && r.EsReporteLocalizacion);
+
+        if (reporte == null || reporte.Persona == null) return NotFound();
+
+        var codigoEstado = reporte.Notas == "PROPUESTO_VIVO" ? "LOCALIZADO_VIVO" : "LOCALIZADO_FALLECIDO";
+        reporte.Persona.EstadoCasoId = (await _context.EstadosCaso.FirstAsync(e => e.Codigo == codigoEstado)).Id;
+        reporte.Persona.FechaUltimaActualizacion = DateTime.UtcNow;
+        reporte.Verificado = true;
+
+        await _context.SaveChangesAsync();
+        TempData["Mensaje"] = "Localización confirmada correctamente.";
+        return RedirectToAction("Index");
     }
 }

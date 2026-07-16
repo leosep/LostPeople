@@ -85,7 +85,7 @@
             <div class="flex justify-center mt-8 space-x-2">
                 @for (int i = 1; i <= totalPages; i++)
                 {
-                    <a href="@Url.Action("Index", new { nombre = Context.Request.Query["nombre"], provinciaId = Context.Request.Query["provinciaId"], estado = Context.Request.Query["estado"], sexo = Context.Request.Query["sexo"], page = i })"
+                    <a href="@Url.Action("Index", new { nombre = Context.Request.Query["nombre"], edadDesde = Context.Request.Query["edadDesde"], edadHasta = Context.Request.Query["edadHasta"], provinciaId = Context.Request.Query["provinciaId"], estado = Context.Request.Query["estado"], sexo = Context.Request.Query["sexo"], tipoAlerta = Context.Request.Query["tipoAlerta"], fechaDesde = Context.Request.Query["fechaDesde"], fechaHasta = Context.Request.Query["fechaHasta"], page = i })"
                        class="px-4 py-2 rounded @(i == page ? "bg-primary text-white" : "bg-white border border-neutral-300 text-neutral-700 hover:bg-neutral-100")">
                         @i
                     </a>

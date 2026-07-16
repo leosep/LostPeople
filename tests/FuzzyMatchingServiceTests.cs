@@ -1,5 +1,6 @@
 using System.Threading;
 using FluentAssertions;
+using LostPeople.Application.Common.Interfaces;
 using LostPeople.Infrastructure.Matching;
 using LostPeople.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -21,7 +22,8 @@ public class FuzzyMatchingServiceTests
             .Options;
         _context = new LostPeopleDbContext(options);
         SeedDatabase();
-        _sut = new FuzzyMatchingService(_context);
+        var notifMock = new Mock<INotificationService>();
+        _sut = new FuzzyMatchingService(_context, notifMock.Object);
     }
 
     private void SeedDatabase()
